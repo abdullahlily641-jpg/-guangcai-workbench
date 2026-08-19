@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>广财财税 AI 营销 · 员工执行分工工作台</title>
+<style>
+  :root{
+    --bg:#f3f6fc; --card:#ffffff; --ink:#1b2233; --sub:#6b7585; --line:#e6ebf4;
+    --primary:#2b6cf6; --primary-2:#5b8bff; --primary-d:#1f4fd0; --primary-l:#eaf1ff;
+    --green:#16a673; --green-l:#e6f7f0; --orange:#f2932b; --orange-l:#fdf0e2;
+    --red:#e5484d; --red-l:#fdecec; --gray:#9aa4b5; --gray-l:#f0f3f8;
+    --purple:#8a5bff; --purple-l:#f0ebff;
+    --radius:16px; --shadow:0 6px 22px rgba(28,45,90,.08);
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5}
+  body{padding-bottom:env(safe-area-inset-bottom)}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;font-size:14px}
+  input,select,textarea{font-family:inherit;font-size:15px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;width:100%;background:#fff;color:var(--ink)}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)}
+  .app{display:flex;min-height:100vh}
+
+  /* Sidebar */
+  .sidebar{width:216px;flex:0 0 216px;background:linear-gradient(180deg,#22336e,#1b2a5c);color:#fff;padding:22px 16px;position:fixed;top:0;bottom:0;left:0;display:flex;flex-direction:column;gap:5px;z-index:30}
+  .brand{display:flex;align-items:center;gap:11px;margin-bottom:16px}
+  .brand .logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,#2b6cf6,#8a5bff);display:flex;align-items:center;justify-content:center;flex:0 0 40px;box-shadow:0 4px 14px rgba(43,108,246,.45)}
+  .brand .t1{font-size:14px;font-weight:800;line-height:1.2}
+  .brand .t2{font-size:10.5px;opacity:.72;letter-spacing:.5px}
+  .nav-btn{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:11px;color:#d7e0ff;font-size:13.5px;transition:.15s;text-align:left;width:100%}
+  .nav-btn svg{width:18px;height:18px;flex:0 0 18px}
+  .nav-btn:hover{background:rgba(255,255,255,.08)}
+  .nav-btn.active{background:linear-gradient(90deg,rgba(91,139,255,.32),rgba(91,139,255,.08));color:#fff;font-weight:700}
+  .side-foot{margin-top:auto;font-size:11px;opacity:.6;line-height:1.6;border-top:1px solid rgba(255,255,255,.12);padding-top:12px}
+  .side-foot b{color:#9db8ff}
+
+  .main{margin-left:216px;flex:1;padding:20px 24px 40px;max-width:1200px;width:100%}
+  .topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .topbar h1{font-size:20px;font-weight:800}
+  .topbar .sub{font-size:12px;color:var(--sub)}
+  .spacer{flex:1}
+  .toolbtn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:10px;background:#fff;border:1px solid var(--line);color:var(--ink);font-size:13px;box-shadow:var(--shadow)}
+  .toolbtn svg{width:15px;height:15px}
+  .sync{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--sub);padding:6px 10px;border-radius:20px;background:#fff;border:1px solid var(--line)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+
+  .section{display:none;animation:fade .25s ease}
+  .section.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;border:1px solid var(--line);margin-bottom:16px}
+  .card h2{font-size:16px;font-weight:800;margin-bottom:3px;display:flex;align-items:center;gap:8px}
+  .card .desc{font-size:12px;color:var(--sub);margin-bottom:14px}
+  .grid{display:grid;gap:14px}
+  .tag{font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px}
+  .t-red{background:var(--red-l);color:var(--red)}
+  .t-orange{background:var(--orange-l);color:var(--orange)}
+  .t-green{background:var(--green-l);color:var(--green)}
+  .t-blue{background:var(--primary-l);color:var(--primary-d)}
+  .t-gray{background:var(--gray-l);color:var(--sub)}
+
+  /* Overview */
+  .hero{background:linear-gradient(120deg,#2b6cf6,#5b8bff 55%,#8a5bff);color:#fff;border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);margin-bottom:16px;position:relative;overflow:hidden}
+  .hero::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.12)}
+  .hero .h-t{font-size:13px;opacity:.9;letter-spacing:.5px}
+  .hero .h-1{font-size:21px;font-weight:800;margin:4px 0 10px}
+  .hero .h-stats{display:flex;gap:22px;flex-wrap:wrap}
+  .hero .h-stats div b{font-size:22px;font-weight:800;display:block}
+  .hero .h-stats div span{font-size:11.5px;opacity:.88}
+  .ov-grid{display:grid;grid-template-columns:210px 1fr;gap:18px;align-items:center}
+  .ring{position:relative;width:180px;height:180px;margin:0 auto}
+  .ring .pct{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .ring .pct b{font-size:36px;font-weight:800}
+  .ring .pct span{font-size:11px;color:var(--sub)}
+  .stat-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .stat{background:var(--gray-l);border-radius:12px;padding:12px;text-align:center}
+  .stat b{display:block;font-size:24px;font-weight:800}
+  .stat span{font-size:12px;color:var(--sub)}
+
+  .mod-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:13px}
+  .mcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow);border-top:4px solid var(--primary);position:relative;transition:.18s}
+  .mcard:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(28,45,90,.13)}
+  .mcard .mno{font-size:11px;font-weight:800;color:#fff;background:var(--primary);padding:2px 9px;border-radius:20px;display:inline-block}
+  .mcard .mname{font-size:14.5px;font-weight:700;margin:8px 0 6px;line-height:1.35}
+  .mcard .mrow{display:flex;justify-content:space-between;font-size:12px;color:var(--sub);margin:3px 0}
+  .mcard .mrow b{color:var(--ink);font-weight:600}
+  .mcard .deliver{font-size:12px;font-weight:800;color:var(--primary-d);margin-top:6px}
+  .prog{width:100%;height:7px;background:var(--gray-l);border-radius:5px;overflow:hidden;margin-top:8px}
+  .prog i{display:block;height:100%;border-radius:5px;background:var(--primary);transition:width .5s}
+  .pst{font-size:11px;font-weight:800;padding:3px 8px;border-radius:20px;position:absolute;top:12px;right:12px}
+  .pst.todo{background:var(--gray-l);color:var(--sub)}
+  .pst.doing{background:var(--primary-l);color:var(--primary-d)}
+  .pst.delay{background:var(--red-l);color:var(--red)}
+  .pst.done{background:var(--green-l);color:var(--green)}
+
+  /* People */
+  .people-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+  .pcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column}
+  .pcard .phead{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .pavatar{width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px;color:#fff;flex:0 0 48px}
+  .pcard .pname{font-size:16px;font-weight:800}
+  .pcard .prole{font-size:12px;color:var(--sub)}
+  .pcard .parea{font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;background:var(--primary-l);color:var(--primary-d);margin-top:3px;display:inline-block}
+  .pcard .pduty{font-size:12.5px;color:var(--sub);margin:6px 0 12px;line-height:1.65}
+  .phases{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+  .phase{background:var(--gray-l);border-radius:9px;padding:8px 6px;text-align:center}
+  .phase .pn{font-size:10.5px;color:var(--sub);font-weight:700;margin-bottom:3px}
+  .phase .pv{font-size:11px;line-height:1.4;color:var(--ink)}
+  .pcard .ptasks{display:grid;gap:6px;margin-top:auto}
+  .ptask{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:7px 9px;border-radius:9px;background:var(--gray-l)}
+  .ptask .d{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+  .ptask .pn2{flex:1;font-weight:500}
+  .ptask .ps{font-size:11px;font-weight:800}
+
+  /* Gantt */
+  .filterbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+  .chip{padding:7px 13px;border-radius:20px;background:#fff;border:1px solid var(--line);font-size:13px;color:var(--sub)}
+  .chip.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .gantt{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow);overflow-x:auto}
+  .gantt-head{display:grid;grid-template-columns:180px 1fr;gap:10px;margin-bottom:8px}
+  .gantt-axis{display:flex;border-bottom:1px solid var(--line);padding-bottom:5px;font-size:11px;color:var(--sub)}
+  .gantt-axis span{flex:1;text-align:center}
+  .grow{display:grid;grid-template-columns:180px 1fr;gap:10px;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line)}
+  .grow:last-child{border-bottom:none}
+  .grow .gl{font-size:13px;font-weight:700;line-height:1.3}
+  .grow .gl small{display:block;font-size:11px;color:var(--sub);font-weight:500;margin-top:2px}
+  .grow .gtrack{position:relative;height:30px;background:repeating-linear-gradient(90deg,var(--gray-l),var(--gray-l) 1px,transparent 1px,transparent calc(100%/12.857));border-radius:8px}
+  .gbar{position:absolute;top:4px;height:22px;border-radius:7px;display:flex;align-items:center;padding:0 8px;color:#fff;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.12);transition:.3s}
+  .today-line{position:absolute;top:-6px;bottom:-6px;width:2px;background:var(--red);z-index:5}
+  .today-line::after{content:"今天";position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--red);font-weight:800;white-space:nowrap}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--sub);margin-top:10px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+  /* Stage board */
+  .stage{display:flex;gap:14px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+  .stage::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--gray)}
+  .stage.s-done::before{background:var(--green)}
+  .stage.s-doing::before{background:var(--primary)}
+  .stage.s-delay::before{background:var(--red)}
+  .stage.s-todo::before{background:var(--gray)}
+  .stage .lcol{flex:0 0 46px;text-align:center}
+  .stage .sno{width:42px;height:42px;border-radius:12px;background:var(--primary-l);color:var(--primary-d);font-weight:800;font-size:18px;display:flex;align-items:center;justify-content:center;margin:0 auto}
+  .stage.s-done .sno{background:var(--green-l);color:var(--green)}
+  .stage.s-delay .sno{background:var(--red-l);color:var(--red)}
+  .stage .mcol{flex:1;min-width:0}
+  .stage .stitle{font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .stage .stime{font-size:12px;color:var(--sub);margin-top:2px}
+  .stage .meta{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;margin-top:10px;font-size:13px}
+  .stage .meta .k{color:var(--sub);font-size:12px}
+  .stage .meta .v{font-weight:500}
+  .stage .rcol{flex:0 0 150px;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+  .status-pill{font-size:12px;font-weight:800;padding:5px 11px;border-radius:20px}
+  .p-done{background:var(--green-l);color:var(--green)}
+  .p-doing{background:var(--primary-l);color:var(--primary-d)}
+  .p-delay{background:var(--red-l);color:var(--red)}
+  .p-todo{background:var(--gray-l);color:var(--sub)}
+  .mini-btn{padding:6px 10px;border-radius:8px;background:#fff;border:1px solid var(--line);font-size:12px;color:var(--primary-d)}
+  .stage .note{font-size:12px;color:var(--sub);margin-top:8px;background:var(--gray-l);padding:7px 10px;border-radius:8px}
+
+  /* Query table */
+  .qbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end}
+  .qbar .qf{flex:1;min-width:150px}
+  .qbar .qf label{font-size:11px;color:var(--sub);display:block;margin-bottom:4px;font-weight:600}
+  .qbar .qsearch{flex:2;min-width:200px}
+  .qcount{font-size:13px;color:var(--sub);margin-bottom:10px}
+  .qtable{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;box-shadow:var(--shadow);font-size:13px}
+  .qtable th{background:var(--primary-l);color:var(--primary-d);text-align:left;padding:10px 12px;font-size:12px;font-weight:800}
+  .qtable td{padding:10px 12px;border-top:1px solid var(--line)}
+  .qtable tr:hover td{background:var(--gray-l)}
+  .qbar-pill{font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px}
+
+  /* Feedback */
+  .fb-form{display:grid;grid-template-columns:repeat(4,1fr) auto;gap:10px;align-items:end;margin-bottom:16px}
+  .fb-form .fld label{font-size:11px;color:var(--sub);display:block;margin-bottom:4px}
+  .fb-list{display:grid;gap:10px}
+  .fb-item{background:#fff;border:1px solid var(--line);border-radius:12px;padding:13px 15px;box-shadow:var(--shadow);border-left:4px solid var(--gray)}
+  .fb-item.st-block{border-left-color:var(--red)}
+  .fb-item.st-risk{border-left-color:var(--orange)}
+  .fb-item.st-done{border-left-color:var(--green)}
+  .fb-item.st-normal{border-left-color:var(--primary)}
+  .fb-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .fb-date{font-size:12px;color:var(--sub)}
+  .fb-person{font-weight:800;font-size:14px}
+  .fb-st{font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px}
+  .fb-st.st-block{background:var(--red-l);color:var(--red)}
+  .fb-st.st-risk{background:var(--orange-l);color:var(--orange)}
+  .fb-st.st-done{background:var(--green-l);color:var(--green)}
+  .fb-st.st-normal{background:var(--primary-l);color:var(--primary-d)}
+  .fb-stage{font-size:12px;color:var(--primary-d);background:var(--primary-l);padding:2px 8px;border-radius:20px}
+  .fb-content{font-size:14px;margin-top:6px;line-height:1.6}
+  .fb-actions{margin-top:8px;display:flex;gap:8px}
+  .fb-del{font-size:12px;color:var(--red);padding:4px 8px;border-radius:7px}
+  .fb-resolve{font-size:12px;color:var(--green);padding:4px 8px;border-radius:7px;background:var(--green-l)}
+
+  /* Modal / Drawer */
+  .overlay{position:fixed;inset:0;background:rgba(20,30,60,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .overlay.show{display:flex}
+  .modal{background:#fff;border-radius:18px;padding:22px;width:100%;max-width:480px;max-height:90vh;overflow:auto}
+  .modal h3{font-size:17px;font-weight:800;margin-bottom:16px}
+  .form-row{margin-bottom:13px}
+  .form-row label{font-size:12px;color:var(--sub);display:block;margin-bottom:5px;font-weight:600}
+  .modal-actions{display:flex;gap:10px;margin-top:18px}
+  .btn-primary{background:var(--primary);color:#fff;padding:11px 16px;border-radius:11px;font-weight:800;flex:1}
+  .btn-ghost{background:#fff;border:1px solid var(--line);color:var(--sub);padding:11px 16px;border-radius:11px;flex:1}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:340px;max-width:88vw;background:#fff;z-index:60;transform:translateX(100%);transition:.25s;box-shadow:-8px 0 30px rgba(0,0,0,.15);padding:20px;overflow:auto}
+  .drawer.show{transform:none}
+  .drawer h3{font-size:16px;font-weight:800;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+  .drawer .close{font-size:22px;color:var(--sub);line-height:1}
+  .toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%) translateY(20px);background:#1b2233;color:#fff;padding:11px 18px;border-radius:12px;font-size:13px;opacity:0;transition:.3s;z-index:80;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .empty{text-align:center;color:var(--gray);font-size:13px;padding:20px;background:var(--gray-l);border-radius:12px}
+
+  .bottomnav{display:none}
+  @media(max-width:820px){
+    .sidebar{display:none}
+    .main{margin-left:0;padding:14px 14px 84px}
+    .topbar h1{font-size:17px}
+    .toolbtn span{display:none}
+    .ov-grid{grid-template-columns:1fr}
+    .stat-cards{grid-template-columns:repeat(2,1fr)}
+    .stage{flex-direction:column;gap:10px}
+    .stage .rcol{flex:0 0 auto;flex-direction:row;align-items:center;width:100%;justify-content:space-between}
+    .stage .meta{grid-template-columns:1fr}
+    .fb-form{grid-template-columns:1fr 1fr}
+    .qbar .qf,.qbar .qsearch{flex:1 1 100%}
+    .qtable{font-size:12px}
+    .bottomnav{display:flex;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);z-index:40;padding:6px 4px calc(6px + env(safe-area-inset-bottom));justify-content:space-around}
+    .bn-btn{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--sub);padding:4px 6px;border-radius:10px;flex:1}
+    .bn-btn svg{width:19px;height:19px}
+    .bn-btn.active{color:var(--primary)}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 4-5"/></svg>
+      </div>
+      <div>
+        <div class="t1">员工执行分工台</div>
+        <div class="t2">WeGrow · 未构 × 广财</div>
+      </div>
+    </div>
+    <button class="nav-btn active" data-sec="overview" onclick="go('overview')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>总览看板
+    </button>
+    <button class="nav-btn" data-sec="people" onclick="go('people')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="7" r="2.5"/><path d="M15.5 14c2.5.5 4.5 2.5 4.5 5"/></svg>人员分工
+    </button>
+    <button class="nav-btn" data-sec="modules" onclick="go('modules')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v16M13 4v16"/></svg>五大模块排期
+    </button>
+    <button class="nav-btn" data-sec="board" onclick="go('board')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v4H3z"/><path d="M3 10h18v4H3z"/><path d="M3 17h18v4H3z"/></svg>阶段执行看板
+    </button>
+    <button class="nav-btn" data-sec="query" onclick="go('query')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>进度查询
+    </button>
+    <button class="nav-btn" data-sec="feedback" onclick="go('feedback')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>跟进日志
+    </button>
+    <div class="side-foot">数据本地存储 · 支持导出备份<br>项目：<b>广财财税 AI 营销</b><br>周期：90 天 · 5 人专项组</div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1>员工执行分工工作台</h1>
+        <div class="sub">人员分工明确 · 进度一目了然 · 五大模块交付测算清晰</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="sync" id="syncBadge"><span class="dot"></span><span id="syncText">已同步（本地）</span></div>
+      <button class="toolbtn" onclick="openDrawer()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.3 1a7 7 0 0 0-1.7-1L14.5 3h-5l-.4 2.5a7 7 0 0 0-1.7 1l-2.3-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.3-1a7 7 0 0 0 1.7 1l.4 2.5h5l.4-2.5a7 7 0 0 0 1.7-1l2.3 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg><span>设置</span>
+      </button>
+      <button class="toolbtn" onclick="exportJSON()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg><span>导出</span>
+      </button>
+    </div>
+
+    <!-- OVERVIEW -->
+    <section class="section active" id="sec-overview">
+      <div class="hero">
+        <div class="h-t">广财财税 AI 营销项目 · 员工执行总览</div>
+        <div class="h-1" id="heroTitle">五大模块交付测算</div>
+        <div class="h-stats" id="heroStats"></div>
+      </div>
+
+      <div class="card">
+        <h2>整体推进概览</h2>
+        <div class="desc">5 大模块平均完成度 · 数据随各模块步骤状态实时更新</div>
+        <div class="ov-grid">
+          <div class="ring">
+            <svg viewBox="0 0 180 180" width="180" height="180">
+              <circle cx="90" cy="90" r="74" fill="none" stroke="#eef1f6" stroke-width="16"/>
+              <circle id="ringFg" cx="90" cy="90" r="74" fill="none" stroke="#2b6cf6" stroke-width="16" stroke-linecap="round" transform="rotate(-90 90 90)" stroke-dasharray="464.9" stroke-dashoffset="464.9"/>
+            </svg>
+            <div class="pct"><b id="ringPct">0%</b><span>模块平均完成</span></div>
+          </div>
+          <div>
+            <div class="stat-cards">
+              <div class="stat"><b id="stMod">5</b><span>服务模块</span></div>
+              <div class="stat"><b style="color:var(--green)" id="stDone">0</b><span>已完成</span></div>
+              <div class="stat"><b style="color:var(--primary)" id="stDoing">0</b><span>进行中</span></div>
+              <div class="stat"><b style="color:var(--red)" id="stRisk">0</b><span>延期/风险</span></div>
+            </div>
+            <div class="bar-wrap" style="margin-top:14px">
+              <div class="bar" id="statusBar" style="display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--gray-l)"></div>
+              <div class="legend" style="display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:12px;color:var(--sub)">
+                <span><i class="sw" style="background:var(--green)"></i>已完成</span>
+                <span><i class="sw" style="background:var(--primary)"></i>进行中</span>
+                <span><i class="sw" style="background:var(--orange)"></i>风险</span>
+                <span><i class="sw" style="background:var(--gray)"></i>未开始</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>五大模块 · 交付测算（多久能出来）</h2>
+        <div class="desc">各模块预计交付日期与剩余天数 · 最晚交付模块决定整体上线节奏</div>
+        <div class="mod-cards" id="modCards"></div>
+      </div>
+
+      <div class="card">
+        <h2>需关注的进展</h2>
+        <div class="desc">逾期、超期或存在风险/阻塞的事项自动汇总于此</div>
+        <div class="fb-list" id="riskList"></div>
+      </div>
+    </section>
+
+    <!-- PEOPLE -->
+    <section class="section" id="sec-people">
+      <div class="card">
+        <h2>人员分工与职责</h2>
+        <div class="desc">5 人专项项目组 · 许娜管进度、肖明威管技术、郑德群管内容、罗永建管体验、赵显维管视觉</div>
+        <div class="people-grid" id="peopleGrid"></div>
+      </div>
+    </section>
+
+    <!-- MODULES -->
+    <section class="section" id="sec-modules">
+      <div class="card">
+        <h2>五大模块排期甘特图</h2>
+        <div class="desc">横轴为 90 天项目周期（按周切分）· 红色竖线为今天 · 点击模块查看步骤明细并更新</div>
+        <div class="filterbar" id="modFilter"></div>
+        <div class="gantt" id="gantt"></div>
+      </div>
+      <div class="card" id="modDetailCard" style="display:none">
+        <h2 id="modDetailTitle">模块明细</h2>
+        <div class="desc" id="modDetailDesc"></div>
+        <div class="grid" id="modDetailSteps"></div>
+      </div>
+    </section>
+
+    <!-- BOARD -->
+    <section class="section" id="sec-board">
+      <div class="card">
+        <h2>阶段执行看板</h2>
+        <div class="desc">8 个落地阶段 · 负责人 / 甲方配合 / 交付物一目了然 · 点击「更新」修改状态与完成度</div>
+        <div class="filterbar" id="boardFilter"></div>
+        <div class="grid" id="stageList"></div>
+      </div>
+    </section>
+
+    <!-- QUERY -->
+    <section class="section" id="sec-query">
+      <div class="card">
+        <h2>进度查询</h2>
+        <div class="desc">按人员 / 模块 / 状态筛选，或输入关键词搜索，快速定位任意任务进度</div>
+        <div class="qbar">
+          <div class="qf"><label>人员</label><select id="qPerson"></select></div>
+          <div class="qf"><label>模块</label><select id="qModule"></select></div>
+          <div class="qf"><label>状态</label><select id="qStatus">
+            <option value="">全部状态</option><option value="todo">未开始</option><option value="doing">进行中</option><option value="done">已完成</option><option value="delay">延期</option>
+          </select></div>
+          <div class="qf qsearch"><label>关键词</label><input type="text" id="qSearch" placeholder="搜索任务名称 / 工作 / 交付物…"></div>
+        </div>
+        <div class="qcount" id="qCount"></div>
+        <div style="overflow-x:auto">
+          <table class="qtable" id="qTable">
+            <thead><tr><th>类型</th><th>任务</th><th>负责人</th><th>状态</th><th>进度</th><th>预计节点</th></tr></thead>
+            <tbody id="qBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEEDBACK -->
+    <section class="section" id="sec-feedback">
+      <div class="card">
+        <h2>执行跟进日志</h2>
+        <div class="desc">员工 / 负责人实时记录执行进展与卡点 · 风险与阻塞自动同步至总览「需关注」</div>
+        <div class="fb-form">
+          <div class="fld"><label>日期</label><input type="date" id="fbDate"></div>
+          <div class="fld"><label>人员</label><select id="fbPerson"></select></div>
+          <div class="fld"><label>关联模块</label><select id="fbModule"></select></div>
+          <div class="fld"><label>状态</label>
+            <select id="fbStatus">
+              <option value="normal">正常</option><option value="risk">风险</option><option value="block">阻塞</option><option value="done">已完成</option>
+            </select>
+          </div>
+          <div class="fld" style="grid-column:1/-1"><label>反馈内容</label><input type="text" id="fbContent" placeholder="例如：AI名片视觉稿待甲方提供品牌素材后确认…"></div>
+          <button class="btn-primary" style="grid-column:1/-1" onclick="addFeedback()">+ 添加跟进</button>
+        </div>
+        <div class="filterbar" id="fbFilter"></div>
+        <div class="fb-list" id="fbList"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<nav class="bottomnav">
+  <button class="bn-btn active" data-sec="overview" onclick="go('overview')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>总览</button>
+  <button class="bn-btn" data-sec="people" onclick="go('people')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="7" r="2.5"/><path d="M15.5 14c2.5.5 4.5 2.5 4.5 5"/></svg>分工</button>
+  <button class="bn-btn" data-sec="modules" onclick="go('modules')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v16M13 4v16"/></svg>排期</button>
+  <button class="bn-btn" data-sec="board" onclick="go('board')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v4H3z"/><path d="M3 10h18v4H3z"/><path d="M3 17h18v4H3z"/></svg>看板</button>
+  <button class="bn-btn" data-sec="query" onclick="go('query')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>查询</button>
+  <button class="bn-btn" data-sec="feedback" onclick="go('feedback')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>日志</button>
+</nav>
+
+<!-- Stage Modal -->
+<div class="overlay" id="stageModal">
+  <div class="modal">
+    <h3 id="smTitle">更新阶段</h3>
+    <div class="form-row"><label>阶段名称</label><input type="text" id="smName" readonly style="background:var(--gray-l)"></div>
+    <div class="form-row"><label>负责人</label><input type="text" id="smOwner" readonly style="background:var(--gray-l)"></div>
+    <div class="form-row"><label>执行状态</label>
+      <select id="smStatus"><option value="todo">未开始</option><option value="doing">进行中</option><option value="delay">延期</option><option value="done">已完成</option></select>
+    </div>
+    <div class="form-row"><label>完成度（%）</label><input type="number" id="smProgress" min="0" max="100"></div>
+    <div class="form-row"><label>执行备注 / 卡点说明</label><textarea id="smNote" rows="3" placeholder="填写当前进展、阻塞点或需协调事项…"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('stageModal')">取消</button>
+      <button class="btn-primary" onclick="saveStage()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Module Step Modal -->
+<div class="overlay" id="stepModal">
+  <div class="modal">
+    <h3 id="stpTitle">更新步骤</h3>
+    <div class="form-row"><label>步骤</label><input type="text" id="stpName" readonly style="background:var(--gray-l)"></div>
+    <div class="form-row"><label>负责人</label><input type="text" id="stpOwner" readonly style="background:var(--gray-l)"></div>
+    <div class="form-row"><label>执行状态</label>
+      <select id="stpStatus"><option value="todo">未开始</option><option value="doing">进行中</option><option value="delay">延期</option><option value="done">已完成</option></select>
+    </div>
+    <div class="form-row"><label>跟进备注</label><textarea id="stpNote" rows="3" placeholder="填写进展或卡点…"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('stepModal')">取消</button>
+      <button class="btn-primary" onclick="saveStep()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Drawer -->
+<div class="overlay" id="drawerOverlay" style="background:transparent;justify-content:flex-end;padding:0" onclick="if(event.target===this)closeDrawer()">
+  <div class="drawer" id="drawer">
+    <h3>项目设置 <button class="close" onclick="closeDrawer()">×</button></h3>
+    <div class="form-row"><label>项目开始日期（D0）</label><input type="date" id="setStart"></div>
+    <div class="form-row"><label>项目周期（天）</label><input type="number" id="setDays" value="90"></div>
+    <p style="font-size:12px;color:var(--sub);margin:6px 0 14px;line-height:1.6">设置开始日期后，五大模块交付测算、甘特图「今天」线与逾期判断都会按此日期实时计算。</p>
+    <button class="btn-primary" onclick="saveSettings()" style="margin-bottom:14px">保存设置</button>
+    <hr style="border:none;border-top:1px solid var(--line);margin:6px 0 14px">
+    <button class="btn-ghost" style="width:100%;margin-bottom:10px" onclick="exportJSON()">导出 JSON 备份</button>
+    <button class="btn-ghost" style="width:100%;margin-bottom:10px" onclick="importJSON()">导入恢复</button>
+    <button class="btn-ghost" style="width:100%;color:var(--red);border-color:#f3c9c9" onclick="clearSample()">清空全部数据</button>
+    <p style="font-size:11px;color:var(--gray);margin-top:12px">本工作台由 WorkBuddy 生成并部署，分享链接（域名含 wegrow）可多端访问；数据存于本地浏览器，建议定期导出备份。</p>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept=".json" style="display:none" onchange="handleImport(event)">
+<div class="toast" id="toast"></div>
+
+<script>
+const PREFIX="wb_wegrow_gc_";
+const STAGE_KEY=PREFIX+"stages", MOD_KEY=PREFIX+"modules", PEOPLE_KEY=PREFIX+"people", FB_KEY=PREFIX+"feedback", SET_KEY=PREFIX+"settings";
+const AV_COLORS=["#2b6cf6","#16a673","#8a5bff","#f2932b","#e5484d"];
+const STATUS_LABEL={todo:"未开始",doing:"进行中",done:"已完成",delay:"延期"};
+const STATUS_CLASS={todo:"todo",doing:"doing",done:"done",delay:"delay"};
+const STATUS_COLOR={todo:"#9aa4b5",doing:"#2b6cf6",done:"#16a673",delay:"#e5484d"};
+const FB_LABEL={normal:"正常",risk:"风险",block:"阻塞",done:"已完成"};
+
+let DATA={};
+let boardFilter="all", modFilter="all", fbFilter="all";
+
+function defaultData(){
+  const meta={project:"广财财税AI营销项目",partyA:"广州市广财咨询服务有限公司",partyB:"重庆未构数字科技有限公司",days:90,start:"2026-08-19"};
+  const people=[
+    {name:"许娜",role:"项目经理 / 事务统筹",area:"全项目统筹",duty:"甲乙双方沟通、资料收集、排期、会议、节点推动、审核反馈、验收与复盘",meeting:"项目推进会（每周1次）",
+      phases:{p1:"启动、资料、访谈、排期",p2:"跟进设计/技术/甲方审核",p3:"培训、试运行、问题管理",p4:"复盘、交付总结、下一阶段协调"}},
+    {name:"肖明威",role:"技术总监 / 技术负责人",area:"技术系统",duty:"系统架构、账号权限、小程序、公域中台、知识库、智能体、测试上线",meeting:"技术验收会（关键节点）",
+      phases:{p1:"技术需求与架构",p2:"系统搭建、知识库、智能体、中台",p3:"测试、账号、技术优化",p4:"功能和使用优化"}},
+    {name:"罗永建",role:"UI设计负责人",area:"UI / 交互",duty:"AI名片、小程序及中台页面结构、信息架构、用户路径与交互体验",meeting:"—",
+      phases:{p1:"用户路径、信息架构",p2:"AI名片/小程序/中台UI",p3:"根据使用反馈优化体验",p4:"后续页面与功能视觉优化"}},
+    {name:"赵显维",role:"平面视觉负责人",area:"平面视觉",duty:"AI名片视觉、海报、内容模板、品牌视觉、广告与朋友圈素材",meeting:"—",
+      phases:{p1:"品牌视觉整理",p2:"名片、海报、内容模板",p3:"补充日常内容模板",p4:"视觉体系持续优化"}},
+    {name:"郑德群",role:"新媒体内容负责人",area:"内容运营",duty:"财税内容策略、选题、脚本、账号内容体系、混剪逻辑、员工内容培训",meeting:"业务/内容会（前期每周1次）",
+      phases:{p1:"客户画像、产品内容、选题",p2:"内容库、脚本、话术、知识整理",p3:"内容发布与销售陪跑",p4:"内容策略和销售素材优化"}}
+  ];
+  const stages=[
+    {id:"s0",no:"0",name:"项目启动",time:"D0–D3",sd:0,ed:3,owner:"许娜",partyA:"项目负责人、试点名单、基础资料",deliver:"《项目启动清单》",status:"todo",progress:0,note:""},
+    {id:"s1",no:"1",name:"业务诊断",time:"第1–7天",sd:1,ed:7,owner:"许娜＋郑德群",partyA:"销售/产品负责人访谈",deliver:"《业务产品地图》《客户画像》",status:"todo",progress:0,note:""},
+    {id:"s2",no:"2",name:"架构设计",time:"第8–15天",sd:8,ed:15,owner:"肖明威＋罗永建＋郑德群",partyA:"确认产品、价格、流程、审核边界",deliver:"《系统架构》《内容架构》",status:"todo",progress:0,note:""},
+    {id:"s3",no:"3",name:"内容与视觉",time:"第10–20天",sd:10,ed:20,owner:"罗永建＋赵显维＋郑德群",partyA:"提供LOGO、案例、专家资料并审核",deliver:"名片设计稿＋模板＋选题库",status:"todo",progress:0,note:""},
+    {id:"s4",no:"4",name:"系统搭建",time:"第16–30天",sd:16,ed:30,owner:"肖明威",partyA:"提供账号、员工、知识资料",deliver:"系统 V1.0 测试版",status:"todo",progress:0,note:""},
+    {id:"s5",no:"5",name:"联调培训",time:"第31–45天",sd:31,ed:45,owner:"肖明威＋许娜＋郑德群",partyA:"试点员工参加培训和测试",deliver:"系统上线＋培训完成",status:"todo",progress:0,note:""},
+    {id:"s6",no:"6",name:"销售试运行",time:"第46–60天",sd:46,ed:60,owner:"郑德群＋许娜",partyA:"销售真实承接并反馈",deliver:"《试运行问题表》",status:"todo",progress:0,note:""},
+    {id:"s7",no:"7",name:"优化扩展",time:"第61–90天",sd:61,ed:90,owner:"全体项目组",partyA:"反馈线索、报价、成交及问题",deliver:"《90天运营总结》",status:"todo",progress:0,note:""}
+  ];
+  const modules=[
+    {id:"m1",no:"3.1",name:"AI名片＋企业人群定向",sd:8,ed:30,color:"#2b6cf6",
+     steps:[
+      {id:"m1s1",name:"客户分类",work:"梳理新企业、代账更换、税务风险、成长型企业等目标人群",owner:"郑德群",partyA:"销售负责人确认",status:"todo",note:""},
+      {id:"m1s2",name:"内容架构",work:"整理企业、产品、价格、案例、流程、咨询入口",owner:"郑德群＋罗永建",partyA:"产品负责人/财税审核",status:"todo",note:""},
+      {id:"m1s3",name:"UI与视觉",work:"完成名片页面、产品卡、案例卡、资质展示",owner:"罗永建＋赵显维",partyA:"提供品牌素材并确认",status:"todo",note:""},
+      {id:"m1s4",name:"技术配置",work:"配置页面、表单、咨询入口和基础行为数据",owner:"肖明威",partyA:"提供企微/电话等入口",status:"todo",note:""},
+      {id:"m1s5",name:"定向策略",work:"整理区域、行业、成立时间、企业规模等筛选规则",owner:"郑德群",partyA:"确认目标企业画像",status:"todo",note:""},
+      {id:"m1s6",name:"上线测试",work:"完成移动端、咨询路径及表单测试",owner:"肖明威＋许娜",partyA:"指定员工测试落地结果",status:"todo",note:""}
+     ]},
+    {id:"m2",no:"3.2",name:"AI一键成片小程序",sd:8,ed:45,color:"#16a673",
+     steps:[
+      {id:"m2s1",name:"小程序配置",work:"员工账号、模板调用、文案/海报/口播生成、后台管理",owner:"肖明威",partyA:"提供员工名单和账号信息",status:"todo",note:""},
+      {id:"m2s2",name:"内容体系",work:"建立财税知识、产品、政策、案例、销售跟进等内容方向",owner:"郑德群",partyA:"提供高频问题和专业答案",status:"todo",note:""},
+      {id:"m2s3",name:"视觉模板",work:"统一品牌、海报、口播和朋友圈模板",owner:"赵显维",partyA:"确认品牌视觉",status:"todo",note:""},
+      {id:"m2s4",name:"首期内容库",work:"整理100个以上选题和10—20套基础模板",owner:"郑德群＋赵显维",partyA:"财税审核人确认",status:"todo",note:""},
+      {id:"m2s5",name:"员工培训",work:"培训“选题—生成—发布—回复—跟进”完整流程",owner:"郑德群＋肖明威",partyA:"试点员工参加",status:"todo",note:""}
+     ]},
+    {id:"m3",no:"3.3",name:"AGI公域客户承接中台",sd:8,ed:60,color:"#8a5bff",
+     steps:[
+      {id:"m3s1",name:"账号盘点",work:"确认抖音、视频号、小红书、快手等可接入账号",owner:"许娜＋肖明威",partyA:"提供账号与管理员",status:"todo",note:""},
+      {id:"m3s2",name:"提醒/回收",work:"设置首次响应、跟进提醒、公共线索池和离职交接规则",owner:"肖明威",partyA:"销售主管确定时限",status:"todo",note:""},
+      {id:"m3s3",name:"试运行",work:"用5—10名销售真实测试线索承接与跟进",owner:"许娜＋肖明威",partyA:"销售真实使用并反馈",status:"todo",note:""}
+     ]},
+    {id:"m4",no:"3.4",name:"AGI营销智能体＋财税知识库",sd:1,ed:60,color:"#f2932b",
+     steps:[
+      {id:"m4s1",name:"资料整理",work:"收集企业、产品、价格、流程、案例、销售话术、财税问答",owner:"许娜＋郑德群",partyA:"按清单提交资料",status:"todo",note:""},
+      {id:"m4s2",name:"知识分类",work:"建立企业、产品、行业、销售、客户管理等知识模块",owner:"郑德群",partyA:"财税负责人确认",status:"todo",note:""},
+      {id:"m4s3",name:"智能体配置",work:"知识导入、提示词、产品推荐、客户标签、人工接管规则",owner:"肖明威",partyA:"明确业务规则",status:"todo",note:""},
+      {id:"m4s4",name:"测试问答",work:"首期完成300—500组问答测试与纠错",owner:"肖明威＋郑德群",partyA:"财税审核人逐步审核",status:"todo",note:""},
+      {id:"m4s5",name:"销售应用",work:"让销售用智能体查知识、判断客户、推荐产品、准备跟进话术",owner:"肖明威＋许娜",partyA:"试点员工真实使用",status:"todo",note:""}
+     ]},
+    {id:"m5",no:"3.5",name:"AI混剪内容矩阵",sd:1,ed:45,color:"#e5484d",
+     steps:[
+      {id:"m5s1",name:"素材整理",work:"按负责人、专家、产品、案例、办公场景分类素材",owner:"郑德群",partyA:"提供历史图片/视频",status:"todo",note:""},
+      {id:"m5s2",name:"视觉模板",work:"统一字幕、封面、Logo、标题和品牌样式",owner:"赵显维",partyA:"确认品牌规范",status:"todo",note:""},
+      {id:"m5s3",name:"混剪规则",work:"建立企业号、专家号、销售号、行业号不同版本逻辑",owner:"肖明威",partyA:"确认账号矩阵",status:"todo",note:""},
+      {id:"m5s4",name:"工具配置",work:"完成混剪工具基础配置和使用培训",owner:"肖明威",partyA:"指定操作人员",status:"todo",note:""}
+     ]}
+  ];
+  const feedback=[];
+  const settings={start:"2026-08-19",days:90};
+  return {meta,people,stages,modules,feedback,settings};
+}
+
+// ---- storage ----
+function load(){
+  try{
+    DATA={
+      meta:JSON.parse(localStorage.getItem(SET_KEY+"_meta"))||null,
+      stages:JSON.parse(localStorage.getItem(STAGE_KEY))||null,
+      modules:JSON.parse(localStorage.getItem(MOD_KEY))||null,
+      people:JSON.parse(localStorage.getItem(PEOPLE_KEY))||null,
+      feedback:JSON.parse(localStorage.getItem(FB_KEY))||null,
+      settings:JSON.parse(localStorage.getItem(SET_KEY))||null
+    };
+  }catch(e){DATA={};}
+  const d=defaultData();
+  if(!DATA.meta)DATA.meta=d.meta;
+  if(!DATA.stages)DATA.stages=d.stages;
+  if(!DATA.modules)DATA.modules=d.modules;
+  if(!DATA.people)DATA.people=d.people;
+  if(!DATA.feedback)DATA.feedback=d.feedback;
+  if(!DATA.settings)DATA.settings=d.settings;
+}
+function save(){
+  localStorage.setItem(STAGE_KEY,JSON.stringify(DATA.stages));
+  localStorage.setItem(MOD_KEY,JSON.stringify(DATA.modules));
+  localStorage.setItem(PEOPLE_KEY,JSON.stringify(DATA.people));
+  localStorage.setItem(FB_KEY,JSON.stringify(DATA.feedback));
+  localStorage.setItem(SET_KEY,JSON.stringify(DATA.settings));
+  localStorage.setItem(SET_KEY+"_meta",JSON.stringify(DATA.meta));
+  flashSync();
+}
+function flashSync(){const t=document.getElementById("syncText");t.textContent="已同步（本地）";document.querySelector("#syncBadge .dot").style.background="var(--green)";}
+function toast(msg){const el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("show"),2000);}
+
+// ---- date helpers ----
+function addDays(start,d){const dt=new Date(start+"T00:00:00");dt.setDate(dt.getDate()+d);return dt;}
+function fmt(dt){return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");}
+function todayStr(){return fmt(new Date());}
+function dayIndex(dateStr){const d=new Date(dateStr+"T00:00:00");const s=new Date(DATA.settings.start+"T00:00:00");return Math.floor((d-s)/86400000);}
+function modEnd(m){return addDays(DATA.settings.start,m.ed);}
+function modStart(m){return addDays(DATA.settings.start,m.sd);}
+function todayIdx(){return dayIndex(todayStr());}
+
+// ---- module status derived ----
+function modStatus(m){
+  const st=m.steps.map(s=>s.status);
+  if(st.every(x=>x==="done"))return "done";
+  if(st.some(x=>x==="delay"))return "delay";
+  if(st.some(x=>x==="doing"))return "doing";
+  return "todo";
+}
+function modProgress(m){const total=m.steps.length;const done=m.steps.filter(s=>s.status==="done").length;return Math.round(done/total*100);}
+
+// ---- navigation ----
+function go(sec){
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+  document.getElementById("sec-"+sec).classList.add("active");
+  document.querySelectorAll(".nav-btn,.bn-btn").forEach(b=>b.classList.toggle("active",b.dataset.sec===sec));
+  if(sec==="overview")renderOverview();
+  if(sec==="people")renderPeople();
+  if(sec==="modules")renderModules();
+  if(sec==="board")renderBoard();
+  if(sec==="query")renderQuery();
+  if(sec==="feedback")renderFeedback();
+}
+
+// ---- OVERVIEW ----
+function renderOverview(){
+  const ms=DATA.modules;
+  const total=ms.length;
+  const done=ms.filter(m=>modStatus(m)==="done").length;
+  const doing=ms.filter(m=>modStatus(m)==="doing").length;
+  const risk=ms.filter(m=>modStatus(m)==="delay").length;
+  const avg=Math.round(ms.reduce((a,b)=>a+modProgress(b),0)/total);
+  document.getElementById("ringPct").textContent=avg+"%";
+  const C=464.9;
+  document.getElementById("ringFg").setAttribute("stroke-dashoffset",C*(1-avg/100));
+  document.getElementById("stMod").textContent=total;
+  document.getElementById("stDone").textContent=done;
+  document.getElementById("stDoing").textContent=doing;
+  document.getElementById("stRisk").textContent=risk;
+  const bar=document.getElementById("statusBar");
+  const mk=(n,c)=>n?('<i style="width:'+(n/total*100)+'%;background:'+c+'"></i>'):"";
+  bar.innerHTML=mk(done,"#16a673")+mk(doing,"#2b6cf6")+mk(risk,"#e5484d")+mk(total-done-doing-risk,"#cbd2dd");
+
+  // hero: latest module delivery
+  const latest=ms.reduce((a,b)=>b.ed>a.ed?b:a);
+  const latestEnd=modEnd(latest);
+  const projEnd=addDays(DATA.settings.start,DATA.settings.days);
+  const rem=Math.max(0,dayIndex(fmt(latestEnd)));
+  document.getElementById("heroTitle").textContent="5 大模块最晚交付：第 "+latest.ed+" 天（"+fmt(latestEnd)+"）";
+  document.getElementById("heroStats").innerHTML=
+    '<div><b>'+total+'</b><span>服务模块</span></div>'+
+    '<div><b>'+avg+'%</b><span>平均完成度</span></div>'+
+    '<div><b>'+rem+'</b><span>最晚交付剩余(天)</span></div>'+
+    '<div><b>'+fmt(projEnd)+'</b><span>项目总复盘日</span></div>';
+
+  // module cards
+  const mc=document.getElementById("modCards");
+  mc.innerHTML=ms.map(m=>{
+    const st=modStatus(m);const prog=modProgress(m);const end=modEnd(m);
+    const rem2=Math.max(0,dayIndex(fmt(end)));
+    const owner=m.steps.flatMap(s=>s.owner.split("＋")).filter((v,i,a)=>a.indexOf(v)===i).join("、");
+    return '<div class="mcard" style="border-top-color:'+m.color+'" onclick="openModule(\''+m.id+'\')">'+
+      '<span class="pst '+st+'">'+STATUS_LABEL[st]+'</span>'+
+      '<span class="mno" style="background:'+m.color+'">'+m.no+'</span>'+
+      '<div class="mname">'+m.name+'</div>'+
+      '<div class="mrow"><span>预计交付</span><b>'+fmt(end)+'</b></div>'+
+      '<div class="mrow"><span>交付节点</span><b>第 '+m.ed+' 天</b></div>'+
+      '<div class="mrow"><span>剩余天数</span><b>'+rem2+' 天</b></div>'+
+      '<div class="mrow"><span>负责人</span><b style="font-size:11.5px">'+owner+'</b></div>'+
+      '<div class="prog"><i style="width:'+prog+'%;background:'+m.color+'"></i></div>'+
+      '<div class="deliver">完成度 '+prog+'% · 共 '+m.steps.length+' 步</div>'+
+    '</div>';
+  }).join("");
+
+  // risk list
+  const risks=[];
+  ms.forEach(m=>{const end=modEnd(m);const st=modStatus(m);
+    if(st==="delay")risks.push({lv:"red",title:m.no+" "+m.name+" · 已延期",meta:"负责人："+m.steps.map(s=>s.owner).join("、")+" ｜ 计划交付："+fmt(end)});
+    else if(st==="doing" && dayIndex(fmt(end))<0)risks.push({lv:"red",title:m.no+" "+m.name+" · 超期未交付",meta:"计划交付："+fmt(end)+"（已超期）"});
+  });
+  DATA.stages.forEach(s=>{const end=addDays(DATA.settings.start,s.ed);
+    if(s.status==="delay")risks.push({lv:"red",title:"阶段"+s.no+" "+s.name+" · 已延期",meta:"负责人："+s.owner+" ｜ 计划结束："+fmt(end)});
+    else if(s.status==="doing" && dayIndex(fmt(end))<0)risks.push({lv:"red",title:"阶段"+s.no+" "+s.name+" · 超期未结",meta:"负责人："+s.owner});
+  });
+  DATA.feedback.filter(f=>!f.resolved && (f.status==="block"||f.status==="risk")).forEach(f=>{
+    risks.push({lv:f.status==="block"?"red":"orange",title:f.person+" · "+(f.status==="block"?"阻塞待解决":"风险待跟进"),meta:f.date+" ｜ "+modName(f.module)+" ｜ "+f.content});
+  });
+  const rl=document.getElementById("riskList");
+  if(!risks.length){rl.innerHTML='<div class="empty">🎉 当前没有延期或待跟进事项，团队执行正常。</div>';}
+  else rl.innerHTML=risks.map(r=>'<div class="fb-item '+(r.lv==="red"?"st-block":"st-risk")+'"><div class="fb-content" style="font-weight:600;margin-top:0">'+r.title+'</div><div class="fb-top" style="margin-top:4px"><span class="fb-content" style="font-weight:400;color:var(--sub)">'+r.meta+'</span></div></div>').join("");
+}
+function modName(id){const m=DATA.modules.find(x=>x.id===id);return m?m.no+" "+m.name:id;}
+
+// ---- PEOPLE ----
+function renderPeople(){
+  const grid=document.getElementById("peopleGrid");
+  grid.innerHTML=DATA.people.map((p,i)=>{
+    const ownedMods=DATA.modules.filter(m=>m.steps.some(s=>s.owner.indexOf(p.name)>=0));
+    const ownedStages=DATA.stages.filter(s=>s.owner.indexOf(p.name)>=0);
+    const tasks=ownedMods.map(m=>{
+      const st=modStatus(m);const c=STATUS_COLOR[st];
+      return '<div class="ptask"><span class="d" style="background:'+c+'"></span><span class="pn2">'+m.no+' '+m.name+'</span><span class="ps" style="color:'+c+'">'+STATUS_LABEL[st]+'</span></div>';
+    });
+    ownedStages.forEach(s=>{const st=s.status;const c=STATUS_COLOR[st];
+      tasks.push('<div class="ptask"><span class="d" style="background:'+c+'"></span><span class="pn2">阶段'+s.no+' '+s.name+'</span><span class="ps" style="color:'+c+'">'+STATUS_LABEL[st]+'</span></div>');
+    });
+    const taskHtml=tasks.join("")||'<div class="ptask"><span class="pn2" style="color:var(--sub)">暂无直接负责任务</span></div>';
+    return '<div class="pcard">'+
+      '<div class="phead"><div class="pavatar" style="background:'+AV_COLORS[i%AV_COLORS.length]+'">'+p.name.charAt(0)+'</div>'+
+      '<div><div class="pname">'+p.name+'</div><div class="prole">'+p.role+'</div><div class="parea">'+p.area+'</div></div></div>'+
+      '<div class="pduty">'+p.duty+'</div>'+
+      '<div class="phases">'+
+        '<div class="phase"><div class="pn">前15天</div><div class="pv">'+p.phases.p1+'</div></div>'+
+        '<div class="phase"><div class="pn">16–30天</div><div class="pv">'+p.phases.p2+'</div></div>'+
+        '<div class="phase"><div class="pn">31–60天</div><div class="pv">'+p.phases.p3+'</div></div>'+
+        '<div class="phase"><div class="pn">61–90天</div><div class="pv">'+p.phases.p4+'</div></div>'+
+      '</div>'+
+      '<div class="ptasks">'+taskHtml+'</div>'+
+    '</div>';
+  }).join("");
+}
+
+// ---- MODULES (Gantt) ----
+function renderModules(){
+  const wrap=document.getElementById("modFilter");
+  wrap.innerHTML='<button class="chip '+(modFilter==="all"?"active":"")+'" onclick="setModFilter(\'all\')">全部模块</button>'+
+    DATA.modules.map(m=>'<button class="chip '+(modFilter===m.id?"active":"")+'" onclick="setModFilter(\''+m.id+'\')" style="'+(modFilter===m.id?'':'color:'+m.color)+'">'+m.no+'</button>').join("");
+  const total=DATA.settings.days;
+  const tIdx=todayIdx();
+  const arr=modFilter==="all"?DATA.modules:DATA.modules.filter(m=>m.id===modFilter);
+  let axis='<div class="gantt-axis">';
+  for(let w=0;w<=Math.ceil(total/7);w++){axis+='<span>第'+(w*7)+'天</span>';}
+  axis+='</div>';
+  let rows='';
+  arr.forEach(m=>{
+    const left=(m.sd/total*100).toFixed(2);
+    const width=((m.ed-m.sd)/total*100).toFixed(2);
+    const st=modStatus(m);
+    const op=(st==="todo")?"0.55":"0.95";
+    const today=(tIdx>=0&&tIdx<=total)?`<div class="today-line" style="left:${(tIdx/total*100).toFixed(2)}%"></div>`:"";
+    rows+=`<div class="grow" onclick="openModule('${m.id}')"><div class="gl">${m.no} ${m.name}<small>${m.steps.length} 步 · ${fmt(modEnd(m))}</small></div><div class="gtrack"><div class="gbar" style="left:${left}%;width:${width}%;background:${m.color};opacity:${op}">第${m.sd}–${m.ed}天</div>${today}</div></div>`;
+  });
+  document.getElementById("gantt").innerHTML=axis+rows;
+  document.getElementById("modDetailCard").style.display="none";
+}
+function setModFilter(f){modFilter=f;renderModules();}
+
+function openModule(id){
+  const m=DATA.modules.find(x=>x.id===id);if(!m)return;
+  modFilter=id;renderModules();
+  document.getElementById("modDetailCard").style.display="block";
+  document.getElementById("modDetailTitle").textContent=m.no+" "+m.name+" · 步骤明细";
+  document.getElementById("modDetailDesc").textContent="计划：第"+m.sd+"–"+m.ed+"天（"+fmt(modStart(m))+" → "+fmt(modEnd(m))+"）｜ 完成度 "+modProgress(m)+"% ｜ 点击步骤更新状态";
+  document.getElementById("modDetailSteps").innerHTML=m.steps.map(s=>{
+    const c=STATUS_COLOR[s.status];
+    return '<div class="stage s-'+s.status+'">'+
+      '<div class="lcol"><div class="sno" style="background:'+c+'22;color:'+c+'">'+STATUS_LABEL[s.status].charAt(0)+'</div></div>'+
+      '<div class="mcol"><div class="stitle">'+s.name+'<span class="status-pill p-'+s.status+'">'+STATUS_LABEL[s.status]+'</span></div>'+
+      '<div class="stime">未构工作：'+s.work+'</div>'+
+      '<div class="meta"><div><div class="k">负责人</div><div class="v">'+s.owner+'</div></div>'+
+      '<div><div class="k">甲方配合</div><div class="v">'+s.partyA+'</div></div></div>'+
+      (s.note?'<div class="note">📝 '+s.note+'</div>':'')+'</div>'+
+      '<div class="rcol"><button class="mini-btn" onclick="openStep(\''+m.id+'\',\''+s.id+'\')">更新</button></div></div>';
+  }).join("");
+  document.getElementById("modDetailCard").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+// ---- BOARD (stages) ----
+function renderBoard(){
+  const wrap=document.getElementById("boardFilter");
+  wrap.innerHTML='<button class="chip '+(boardFilter==="all"?"active":"")+'" onclick="setBoardFilter(\'all\')">全部</button>'+
+    DATA.people.map(p=>'<button class="chip '+(boardFilter===p.name?"active":"")+'" onclick="setBoardFilter(\''+p.name+'\')">'+p.name+'</button>').join("");
+  const list=document.getElementById("stageList");
+  const arr=DATA.stages.filter(s=>boardFilter==="all"||s.owner.indexOf(boardFilter)>=0);
+  if(!arr.length){list.innerHTML='<div class="empty">该成员当前阶段看板为空。</div>';return;}
+  list.innerHTML=arr.map(s=>{
+    const cls=STATUS_CLASS[s.status];
+    return '<div class="stage s-'+cls+'">'+
+      '<div class="lcol"><div class="sno">'+s.no+'</div></div>'+
+      '<div class="mcol"><div class="stitle">'+s.name+'<span class="status-pill p-'+s.status+'">'+STATUS_LABEL[s.status]+'</span></div>'+
+      '<div class="stime">📅 '+s.time+' ｜ 计划：'+fmt(addDays(DATA.settings.start,s.sd))+' → '+fmt(addDays(DATA.settings.start,s.ed))+'</div>'+
+      '<div class="meta"><div><div class="k">负责人</div><div class="v">'+s.owner+'</div></div>'+
+      '<div><div class="k">甲方配合</div><div class="v">'+s.partyA+'</div></div>'+
+      '<div style="grid-column:1/-1"><div class="k">阶段交付</div><div class="v">'+s.deliver+'</div></div></div>'+
+      (s.note?'<div class="note">📝 '+s.note+'</div>':'')+'</div>'+
+      '<div class="rcol"><div class="prog"><i style="width:'+(s.progress||0)+'%"></i></div>'+
+      '<span style="font-size:12px;color:var(--sub)">完成度 '+(s.progress||0)+'%</span>'+
+      '<button class="mini-btn" onclick="openStage(\''+s.id+'\')">更新</button></div></div>';
+  }).join("");
+}
+function setBoardFilter(f){boardFilter=f;renderBoard();}
+
+// ---- QUERY ----
+function renderQuery(){
+  const pf=document.getElementById("qPerson");
+  pf.innerHTML='<option value="">全部人员</option>'+DATA.people.map(p=>'<option value="'+p.name+'">'+p.name+'</option>').join("");
+  const mf=document.getElementById("qModule");
+  mf.innerHTML='<option value="">全部模块</option>'+DATA.modules.map(m=>'<option value="'+m.id+'">'+m.no+' '+m.name+'</option>').join("");
+  runQuery();
+}
+function runQuery(){
+  const person=document.getElementById("qPerson").value;
+  const mod=document.getElementById("qModule").value;
+  const status=document.getElementById("qStatus").value;
+  const kw=document.getElementById("qSearch").value.trim().toLowerCase();
+  let rows=[];
+  DATA.stages.forEach(s=>{
+    if(person&&s.owner.indexOf(person)<0)return;
+    if(status&&s.status!==status)return;
+    if(kw&&!(s.name.toLowerCase().includes(kw)||s.deliver.toLowerCase().includes(kw)||s.owner.toLowerCase().includes(kw)))return;
+    rows.push({type:"阶段",name:"阶段"+s.no+" "+s.name,owner:s.owner,status:s.status,prog:s.progress,node:"第"+s.ed+"天 / "+fmt(addDays(DATA.settings.start,s.ed)),color:"#2b6cf6"});
+  });
+  DATA.modules.forEach(m=>{
+    m.steps.forEach(stp=>{
+      if(person&&stp.owner.indexOf(person)<0)return;
+      if(mod&&m.id!==mod)return;
+      if(status&&stp.status!==status)return;
+      if(kw&&!(stp.name.toLowerCase().includes(kw)||stp.work.toLowerCase().includes(kw)||stp.owner.toLowerCase().includes(kw)))return;
+      rows.push({type:m.no+" 步骤",name:stp.name,owner:stp.owner,status:stp.status,prog:stp.status==="done"?100:stp.status==="doing"?50:0,node:"第"+m.ed+"天 / "+fmt(modEnd(m)),color:m.color});
+    });
+  });
+  document.getElementById("qCount").textContent="共匹配 "+rows.length+" 项任务";
+  if(!rows.length){document.getElementById("qBody").innerHTML='<tr><td colspan="6"><div class="empty">没有匹配的任务，调整筛选条件试试。</div></td></tr>';return;}
+  document.getElementById("qBody").innerHTML=rows.map(r=>{
+    const c=STATUS_COLOR[r.status];
+    return '<tr><td><span class="tag" style="background:'+r.color+'22;color:'+r.color+'">'+r.type+'</span></td>'+
+      '<td><b>'+r.name+'</b></td><td>'+r.owner+'</td>'+
+      '<td><span class="qbar-pill" style="background:'+c+'22;color:'+c+'">'+STATUS_LABEL[r.status]+'</span></td>'+
+      '<td><div class="prog" style="width:90px"><i style="width:'+r.prog+'%;background:'+c+'"></i></div></td>'+
+      '<td style="color:var(--sub);font-size:12px">'+r.node+'</td></tr>';
+  }).join("");
+}
+
+// ---- FEEDBACK ----
+function renderFeedback(){
+  const pf=document.getElementById("fbPerson");
+  pf.innerHTML='<option value="">— 选择人员 —</option>'+DATA.people.map(p=>'<option value="'+p.name+'">'+p.name+'</option>').join("");
+  const mf=document.getElementById("fbModule");
+  mf.innerHTML='<option value="">— 选择模块 —</option>'+DATA.modules.map(m=>'<option value="'+m.id+'">'+m.no+' '+m.name+'</option>').join("");
+  const ff=document.getElementById("fbFilter");
+  ff.innerHTML='<button class="chip '+(fbFilter==="all"?"active":"")+'" onclick="setFbFilter(\'all\')">全部</button>'+
+    '<button class="chip '+(fbFilter==="open"?"active":"")+'" onclick="setFbFilter(\'open\')">待跟进</button>'+
+    '<button class="chip '+(fbFilter==="done"?"active":"")+'" onclick="setFbFilter(\'done\')">已解决</button>';
+  let arr=DATA.feedback.slice().sort((a,b)=>a.date<b.date?1:-1);
+  if(fbFilter==="open")arr=arr.filter(f=>!f.resolved);
+  if(fbFilter==="done")arr=arr.filter(f=>f.resolved);
+  const list=document.getElementById("fbList");
+  if(!arr.length){list.innerHTML='<div class="empty">暂无跟进记录，添加一条开始追踪。</div>';return;}
+  list.innerHTML=arr.map(f=>{
+    const cls="st-"+f.status;
+    const res=f.resolved?'<span class="fb-st st-done">已解决</span>':'';
+    const act=f.resolved?'<button class="fb-del" onclick="delFb(\''+f.id+'\')">删除</button>':'<button class="fb-resolve" onclick="resolveFb(\''+f.id+'\')">标记解决</button><button class="fb-del" onclick="delFb(\''+f.id+'\')">删除</button>';
+    return '<div class="fb-item '+cls+'">'+
+      '<div class="fb-top"><span class="fb-date">'+f.date+'</span><span class="fb-person">'+f.person+'</span><span class="fb-stage">'+modName(f.module)+'</span><span class="fb-st '+cls+'">'+FB_LABEL[f.status]+'</span>'+res+'</div>'+
+      '<div class="fb-content">'+f.content+'</div><div class="fb-actions">'+act+'</div></div>';
+  }).join("");
+}
+function setFbFilter(f){fbFilter=f;renderFeedback();}
+function addFeedback(){
+  const date=document.getElementById("fbDate").value||todayStr();
+  const person=document.getElementById("fbPerson").value;
+  const module=document.getElementById("fbModule").value;
+  const status=document.getElementById("fbStatus").value;
+  const content=document.getElementById("fbContent").value.trim();
+  if(!person||!module||!content){toast("请填写人员、模块与反馈内容");return;}
+  DATA.feedback.push({id:"f"+Date.now(),date,person,module,status,content,resolved:(status==="done")});
+  save();renderFeedback();renderOverview();
+  document.getElementById("fbContent").value="";toast("跟进已添加");
+}
+function delFb(id){DATA.feedback=DATA.feedback.filter(f=>f.id!==id);save();renderFeedback();renderOverview();toast("已删除");}
+function resolveFb(id){const f=DATA.feedback.find(x=>x.id===id);if(f){f.resolved=true;save();renderFeedback();renderOverview();toast("已标记为解决");}}
+
+// ---- edit stage ----
+let curStage=null;
+function openStage(id){const s=DATA.stages.find(x=>x.id===id);if(!s)return;curStage=id;
+  document.getElementById("smTitle").textContent="更新阶段 · "+s.name;
+  document.getElementById("smName").value=s.name;document.getElementById("smOwner").value=s.owner;
+  document.getElementById("smStatus").value=s.status;document.getElementById("smProgress").value=s.progress||0;
+  document.getElementById("smNote").value=s.note||"";document.getElementById("stageModal").classList.add("show");}
+function saveStage(){const s=DATA.stages.find(x=>x.id===curStage);if(!s)return;
+  s.status=document.getElementById("smStatus").value;
+  s.progress=Math.max(0,Math.min(100,parseInt(document.getElementById("smProgress").value)||0));
+  s.note=document.getElementById("smNote").value.trim();
+  if(s.status==="done")s.progress=100;
+  save();closeModal("stageModal");renderBoard();renderPeople();renderOverview();toast("阶段已更新");}
+
+// ---- edit step ----
+let curMod=null,curStep=null;
+function openStep(mid,sid){const m=DATA.modules.find(x=>x.id===mid);if(!m)return;const s=m.steps.find(x=>x.id===sid);if(!s)return;
+  curMod=mid;curStep=sid;
+  document.getElementById("stpTitle").textContent="更新步骤 · "+s.name;
+  document.getElementById("stpName").value=s.name;document.getElementById("stpOwner").value=s.owner;
+  document.getElementById("stpStatus").value=s.status;document.getElementById("stpNote").value=s.note||"";
+  document.getElementById("stepModal").classList.add("show");}
+function saveStep(){const m=DATA.modules.find(x=>x.id===curMod);if(!m)return;const s=m.steps.find(x=>x.id===curStep);if(!s)return;
+  s.status=document.getElementById("stpStatus").value;s.note=document.getElementById("stpNote").value.trim();
+  save();closeModal("stepModal");openModule(m.id);renderOverview();renderPeople();toast("步骤已更新");}
+function closeModal(id){document.getElementById(id).classList.remove("show");}
+
+// ---- settings ----
+function openDrawer(){
+  document.getElementById("setStart").value=DATA.settings.start;
+  document.getElementById("setDays").value=DATA.settings.days;
+  document.getElementById("drawerOverlay").classList.add("show");document.getElementById("drawer").classList.add("show");}
+function closeDrawer(){document.getElementById("drawerOverlay").classList.remove("show");document.getElementById("drawer").classList.remove("show");}
+function saveSettings(){
+  DATA.settings.start=document.getElementById("setStart").value||DATA.settings.start;
+  DATA.settings.days=parseInt(document.getElementById("setDays").value)||90;
+  save();closeDrawer();renderAll();toast("设置已保存，排期已重算");}
+function clearSample(){
+  if(!confirm("确定清空全部数据？此操作不可恢复，建议先导出备份。"))return;
+  [STAGE_KEY,MOD_KEY,PEOPLE_KEY,FB_KEY,SET_KEY,SET_KEY+"_meta"].forEach(k=>localStorage.removeItem(k));
+  DATA=defaultData();save();renderAll();closeDrawer();toast("已清空，恢复默认数据");}
+
+// ---- export / import ----
+function exportJSON(){
+  const blob=new Blob([JSON.stringify(DATA,null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download="广财分工工作台备份_"+todayStr()+".json";a.click();toast("已导出备份");}
+function importJSON(){document.getElementById("fileInput").click();}
+function handleImport(e){
+  const file=e.target.files[0];if(!file)return;const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);
+    if(d.meta)DATA.meta=d.meta;if(d.stages)DATA.stages=d.stages;if(d.modules)DATA.modules=d.modules;
+    if(d.people)DATA.people=d.people;if(d.feedback)DATA.feedback=d.feedback;if(d.settings)DATA.settings=d.settings;
+    save();renderAll();toast("导入成功，数据已恢复");}catch(err){toast("导入失败：文件格式不正确");}};
+  r.readAsText(file);e.target.value="";}
+
+// ---- live query bindings ----
+["qPerson","qModule","qStatus","qSearch"].forEach(id=>{document.getElementById(id).addEventListener("change",runQuery);document.getElementById(id).addEventListener("input",runQuery);});
+
+// ---- init ----
+function renderAll(){renderOverview();renderPeople();renderModules();renderBoard();renderQuery();renderFeedback();}
+load();
+document.getElementById("fbDate").value=todayStr();
+renderAll();
+</script>
+</body>
+</html>
