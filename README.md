@@ -7,7 +7,7 @@
 ```
 github-pages-deploy/
 ├── index.html   # 工作台主页面（唯一核心文件）
-├── CNAME        # 自定义域名：gongcai.wegrow.com.cn
+├── CNAME        # 自定义域名：gongcai.wegrow2025.com
 ├── .nojekyll    # 禁用 GitHub 的 Jekyll 处理
 └── README.md    # 本说明
 ```
@@ -38,24 +38,24 @@ git push -u origin main
 - 约 1 分钟后，GitHub 会显示站点地址 `https://<你的GitHub用户名>.github.io/guangcai-workbench/`。
 
 ### 4. 绑定自定义域名
-- 仍在 `Settings` → `Pages` → `Custom domain` 填入 `gongcai.wegrow.com.cn`，点 **Save**。
+- 仍在 `Settings` → `Pages` → `Custom domain` 填入 `gongcai.wegrow2025.com`，点 **Save**。
 - 稍等片刻出现 `DNS check successful` 后，勾选 **Enforce HTTPS**（GitHub 免费提供 SSL 证书，需 DNS 生效后才会可选）。
-- 若 `Custom domain` 被清空：确认 `CNAME` 文件已正确提交（内容为 `gongcai.wegrow.com.cn`）。
+- 若 `Custom domain` 被清空：确认 `CNAME` 文件已正确提交（内容为 `gongcai.wegrow2025.com`）。
 
-### 5. 在 wegrow.com.cn 的 DNS 后台加解析（关键，需你/运维操作）
-到 `wegrow.com.cn` 的域名解析控制台（腾讯云 DNSPod / 阿里云云解析等）添加一条记录：
+### 5. 在 wegrow2025.com 的 DNS 后台加解析（关键，需你/运维操作）
+到 `wegrow2025.com` 的域名解析控制台（腾讯云 DNSPod / 阿里云云解析等）添加一条记录：
 
 | 记录类型 | 主机记录 | 记录值（指向）        | TTL  |
 |----------|----------|-----------------------|------|
 | CNAME    | gongcai  | `<你的GitHub用户名>.github.io` | 600  |
 
 > 注意：记录值末尾的 `.github.io` 后**不要**加点（GitHub 现版已不要求）。
-> 如果想换成别的子域名（如 `workbench.wegrow.com.cn`），同时改 `CNAME` 文件内容和这条解析的主机记录即可。
+> 如果想换成别的子域名（如 `workbench.wegrow2025.com`），同时改 `CNAME` 文件内容和这条解析的主机记录即可。
 
 ### 6. 访问
 DNS 生效（通常几分钟，最多 24h）后，打开：
 
-**https://gongcai.wegrow.com.cn**
+**https://gongcai.wegrow2025.com**
 
 即为对外正式链接，域名带 `wegrow`，与 WorkBuddy 无关。
 
