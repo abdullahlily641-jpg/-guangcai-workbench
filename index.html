@@ -123,6 +123,10 @@
   .ptask .d{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
   .ptask .pn2{flex:1;font-weight:500}
   .ptask .ps{font-size:11px;font-weight:800}
+  .ptask-link{cursor:pointer;transition:border-color .15s,background .15s;border:1px solid transparent}
+  .ptask-link:hover{background:#eef3ff;border-color:#2b6cf6}
+  .ptask-link .jump{font-size:11px;color:#2b6cf6;font-weight:800;opacity:0;transition:opacity .15s}
+  .ptask-link:hover .jump{opacity:1}
 
   /* Gantt */
   .filterbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
@@ -741,10 +745,10 @@ function renderPeople(){
     const ownedStages=DATA.stages.filter(s=>s.owner.indexOf(p.name)>=0);
     const tasks=ownedMods.map(m=>{
       const st=modStatus(m);const c=STATUS_COLOR[st];
-      return '<div class="ptask"><span class="d" style="background:'+c+'"></span><span class="pn2">'+m.no+' '+m.name+'</span><span class="ps" style="color:'+c+'">'+STATUS_LABEL[st]+'</span></div>';
+      return '<div class="ptask ptask-link" onclick="goModule(\''+m.id+'\')" title="跳转到模块排期"><span class="d" style="background:'+c+'"></span><span class="pn2">'+m.no+' '+m.name+'</span><span class="ps" style="color:'+c+'">'+STATUS_LABEL[st]+'</span><span class="jump">↗</span></div>';
     });
     ownedStages.forEach(s=>{const st=s.status;const c=STATUS_COLOR[st];
-      tasks.push('<div class="ptask"><span class="d" style="background:'+c+'"></span><span class="pn2">阶段'+s.no+' '+s.name+'</span><span class="ps" style="color:'+c+'">'+STATUS_LABEL[st]+'</span></div>');
+      tasks.push('<div class="ptask ptask-link" onclick="goStage(\''+s.id+'\')" title="跳转到阶段看板"><span class="d" style="background:'+c+'"></span><span class="pn2">阶段'+s.no+' '+s.name+'</span><span class="ps" style="color:'+c+'">'+STATUS_LABEL[st]+'</span><span class="jump">↗</span></div>');
     });
     const taskHtml=tasks.join("")||'<div class="ptask"><span class="pn2" style="color:var(--sub)">暂无直接负责任务</span></div>';
     return '<div class="pcard">'+
@@ -806,6 +810,10 @@ function openModule(id){
   }).join("");
   document.getElementById("modDetailCard").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
+// 从人员分工卡片跳转：切到模块区并打开对应模块明细
+function goModule(id){go("modules");openModule(id);}
+// 从人员分工卡片跳转：切到阶段看板并打开对应阶段更新弹窗
+function goStage(id){go("board");openStage(id);}
 
 // ---- BOARD (stages) ----
 function renderBoard(){
@@ -977,6 +985,32 @@ function getGhToken(){return localStorage.getItem(PREFIX+"gh_token")||"";}
 function syncOn(){return getGhToken().length>20;}
 let CLOUD_SHA=null;   // remote blob sha（乐观锁）
 let CLOUD_REV=null;   // 最近一次写入时间（来自 data._sync.at）
+let BASE_DATA=null;   // 最近一次拉取/保存后的云端基线（深拷贝），用于字段级三方合并
+function deepClone(o){return JSON.parse(JSON.stringify(o));}
+function jeq(a,b){try{return JSON.stringify(a)===JSON.stringify(b);}catch(e){return false;}}
+// 字段级三方合并：baseOld=云端最新, local=当前本地(=基线+本人改动), baseline=上次拉取基线
+// 规则：local 相对 baseline 改了的单元→采用 local(本人改动)；否则采用 baseOld(云端/他人改动)。从而实现"合并所有人改动，不互相覆盖"
+function fieldMerge(baseOld, local, baseline){
+  if(Array.isArray(local)){
+    const bo=Array.isArray(baseOld)?baseOld:[]; const bl=Array.isArray(baseline)?baseline:[];
+    const n=Math.max(local.length, bo.length, bl.length); const out=new Array(n);
+    for(let i=0;i<n;i++){const lv=local[i],ov=bo[i],bv=bl[i];
+      if(i<local.length && !(i<bl.length && jeq(lv,bv))){out[i]=(i<bo.length)?fieldMerge(ov,lv,bv):lv;}
+      else if(i<bo.length){out[i]=ov;}
+      else if(i<local.length){out[i]=lv;}}
+    return out;
+  }
+  if(local && typeof local==="object"){
+    const bo=(baseOld&&typeof baseOld==="object")?baseOld:{}; const bl=(baseline&&typeof baseline==="object")?baseline:{};
+    const out={}; const keys=Object.keys(local).concat(Object.keys(bo)).concat(Object.keys(bl));
+    for(const k of keys){const lv=local[k],ov=bo[k],bv=bl[k];
+      if(k in local && !(k in bl && jeq(lv,bv))){out[k]=(k in bo)?fieldMerge(ov,lv,bv):lv;}
+      else if(k in bo){out[k]=ov;}
+      else if(k in local){out[k]=lv;}}
+    return out;
+  }
+  return jeq(local,baseline)?baseOld:local;
+}
 function fmtTime(iso){if(!iso)return"";const d=new Date(iso);const p=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes());}
 function mergeWithCloud(d){const def=defaultData();const src=d&&d.data?d.data:d;delete src._sync;return {meta:src.meta||def.meta,stages:src.stages||def.stages,modules:src.modules||def.modules,people:src.people||def.people,feedback:Array.isArray(src.feedback)?src.feedback:def.feedback,settings:src.settings||def.settings};}
 function ghHeaders(auth){const h={Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"};const t=getGhToken();if(auth&&t)h.Authorization="Bearer "+t;return h;}
@@ -984,7 +1018,7 @@ function ghUrl(){return "https://api.github.com/repos/"+GH_OWNER+"/"+GH_REPO+"/c
 function b64enc(s){return btoa(unescape(encodeURIComponent(s)));}
 function b64dec(s){return decodeURIComponent(escape(atob(s.replace(/\s/g,""))));}
 async function ghGet(){const r=await fetch(ghUrl(),{headers:ghHeaders(true),cache:"no-store"});if(r.status===404)return null;if(r.status===403)throw new Error("读取受限(可能触发限流，稍后再试)");if(!r.ok)throw new Error("读取失败("+r.status+")");const j=await r.json();let data;try{data=JSON.parse(b64dec(j.content));}catch(e){throw new Error("云端数据解析失败");}return {data:data,sha:j.sha,updated_at:(j.commit&&j.commit.committer&&j.commit.committer.date)||null};}
-function applyCloud(row){if(row&&row.data&&Object.keys(row.data).length){const s=row.data._sync||{};DATA=mergeWithCloud(row.data);CLOUD_SHA=row.sha;persistLocal();renderAll();CLOUD_REV=s.at||row.updated_at;setCloudStatus("已同步云端 · "+(s.by||"")+" · "+fmtTime(CLOUD_REV),"var(--green)");}else{setCloudStatus("云端暂无数据，保存即建立","var(--orange)");}}
+function applyCloud(row){if(row&&row.data&&Object.keys(row.data).length){const s=row.data._sync||{};DATA=mergeWithCloud(row.data);BASE_DATA=deepClone(DATA);CLOUD_SHA=row.sha;persistLocal();renderAll();CLOUD_REV=s.at||row.updated_at;setCloudStatus("已同步云端 · "+(s.by||"")+" · "+fmtTime(CLOUD_REV),"var(--green)");}else{setCloudStatus("云端暂无数据，保存即建立","var(--orange)");}}
 async function boot(){
   load();
   const wi=document.getElementById("whoAmI");if(wi)wi.value=localStorage.getItem(PREFIX+"who")||"";
@@ -993,23 +1027,43 @@ async function boot(){
   if(!syncOn()){setCloudStatus("本地模式（填 Token 可多人共享）","var(--gray)");}
   trySilentPull();
 }
-function trySilentPull(){if(!syncOn())return;ghGet().then(row=>{if(row&&row.data&&Object.keys(row.data).length){const s=row.data._sync||{};DATA=mergeWithCloud(row.data);CLOUD_SHA=row.sha;persistLocal();renderAll();CLOUD_REV=s.at||row.updated_at;setCloudStatus("已同步云端 · "+(s.by||"")+" · "+fmtTime(CLOUD_REV),"var(--green)");}else{setCloudStatus("云端暂无数据，保存即建立","var(--orange)");}}).catch(()=>{setCloudStatus("云拉取失败，当前为本地","var(--red)");});}
+function trySilentPull(){if(!syncOn())return;ghGet().then(row=>{if(row&&row.data&&Object.keys(row.data).length){const s=row.data._sync||{};DATA=mergeWithCloud(row.data);BASE_DATA=deepClone(DATA);CLOUD_SHA=row.sha;persistLocal();renderAll();CLOUD_REV=s.at||row.updated_at;setCloudStatus("已同步云端 · "+(s.by||"")+" · "+fmtTime(CLOUD_REV),"var(--green)");}else{setCloudStatus("云端暂无数据，保存即建立","var(--orange)");}}).catch(()=>{setCloudStatus("云拉取失败，当前为本地","var(--red)");});}
 async function saveCloud(){
   const who=(document.getElementById("whoAmI").value||"").trim();localStorage.setItem(PREFIX+"who",who);
   if(!syncOn()){openSyncSetup();return;}
   const btn=document.getElementById("btnSaveCloud");btn.disabled=true;btn.textContent="保存中…";setCloudStatus("正在保存到云端…","var(--gray)");
   try{
-    const cur=await ghGet();
-    if(cur&&cur.sha&&CLOUD_SHA&&cur.sha!==CLOUD_SHA){const ok=await confirmConflict(cur);if(!ok){applyCloud(cur);toast("已拉取他人最新修改");return;}}
-    if(cur&&cur.sha)CLOUD_SHA=cur.sha;
+    // 先读云端最新，做字段级三方合并：他人改的格子保留，只合并本人改的格子 → 不互相覆盖
+    let cur=null;try{cur=await ghGet();}catch(e){cur=null;}
+    const base=BASE_DATA||deepClone(DATA);
+    if(cur&&cur.data&&Object.keys(cur.data).length){
+      const cd=JSON.parse(JSON.stringify(cur.data));delete cd._sync;
+      const merged=fieldMerge(cd,DATA,base);
+      delete merged._sync;
+      DATA=merged;BASE_DATA=deepClone(merged);
+      if(cur.sha)CLOUD_SHA=cur.sha;
+    }else{BASE_DATA=deepClone(DATA);}
     const payload=JSON.parse(JSON.stringify(DATA));payload._sync={by:who||"匿名",at:new Date().toISOString()};
     const body={message:"workbench sync by "+(who||"anon"),content:b64enc(JSON.stringify(payload)),branch:GH_BRANCH};
     if(CLOUD_SHA)body.sha=CLOUD_SHA;
     let r=await fetch(ghUrl(),{method:"PUT",headers:Object.assign(ghHeaders(true),{"Content-Type":"application/json"}),body:JSON.stringify(body)});
-    if(r.status===409){const cur2=await ghGet();const ok=await confirmConflict(cur2);if(!ok){applyCloud(cur2);toast("已拉取他人最新修改");return;}CLOUD_SHA=cur2.sha;body.sha=CLOUD_SHA;r=await fetch(ghUrl(),{method:"PUT",headers:Object.assign(ghHeaders(true),{"Content-Type":"application/json"}),body:JSON.stringify(body)});}
+    if(r.status===409){
+      // 云端又被人抢先写入：再拉一次、再合并、再重试（绝不覆盖他人）
+      const cur2=await ghGet();
+      if(cur2&&cur2.data&&Object.keys(cur2.data).length){
+        const cd2=JSON.parse(JSON.stringify(cur2.data));delete cd2._sync;
+        const m2=fieldMerge(cd2,DATA,BASE_DATA||DATA);
+        delete m2._sync;
+        DATA=m2;BASE_DATA=deepClone(m2);
+      }
+      if(cur2&&cur2.sha)CLOUD_SHA=cur2.sha;
+      const payload2=JSON.parse(JSON.stringify(DATA));payload2._sync={by:who||"匿名",at:new Date().toISOString()};
+      body.sha=CLOUD_SHA;body.content=b64enc(JSON.stringify(payload2));
+      r=await fetch(ghUrl(),{method:"PUT",headers:Object.assign(ghHeaders(true),{"Content-Type":"application/json"}),body:JSON.stringify(body)});
+    }
     if(!r.ok)throw new Error("保存失败("+r.status+")");
-    const j=await r.json();CLOUD_SHA=j.content.sha;CLOUD_REV=payload._sync.at;persistLocal();renderAll();
-    setCloudStatus("已同步云端 · "+(who||"匿名")+" · "+fmtTime(CLOUD_REV),"var(--green)");toast("已保存到云端，团队可见");
+    const j=await r.json();CLOUD_SHA=j.content.sha;CLOUD_REV=payload._sync.at;BASE_DATA=deepClone(DATA);persistLocal();renderAll();
+    setCloudStatus("已同步云端 · "+(who||"匿名")+" · "+fmtTime(CLOUD_REV),"var(--green)");toast("已保存到云端（自动合并他人改动）");
   }catch(e){setCloudStatus("保存失败："+e.message,"var(--red)");toast("保存失败，请检查网络/Token");}
   finally{btn.disabled=false;btn.textContent="保存到云端";}
 }
