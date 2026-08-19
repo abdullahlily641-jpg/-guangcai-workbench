@@ -983,8 +983,8 @@ function ghHeaders(auth){const h={Accept:"application/vnd.github+json","X-GitHub
 function ghUrl(){return "https://api.github.com/repos/"+GH_OWNER+"/"+GH_REPO+"/contents/"+GH_PATH+"?ref="+GH_BRANCH;}
 function b64enc(s){return btoa(unescape(encodeURIComponent(s)));}
 function b64dec(s){return decodeURIComponent(escape(atob(s.replace(/\s/g,""))));}
-async function ghGet(){const r=await fetch(ghUrl(),{headers:ghHeaders(true)});if(r.status===404)return null;if(r.status===403)throw new Error("读取受限(可能触发限流，稍后再试)");if(!r.ok)throw new Error("读取失败("+r.status+")");const j=await r.json();let data;try{data=JSON.parse(b64dec(j.content));}catch(e){throw new Error("云端数据解析失败");}return {data:data,sha:j.sha,updated_at:(j.commit&&j.commit.committer&&j.commit.committer.date)||null};}
-function applyCloud(row){if(row&&row.data&&Object.keys(row.data).length){const s=row.data._sync||{};const merged=mergeWithCloud(row.data);CLOUD_SHA=row.sha;persistLocal();renderAll();CLOUD_REV=s.at||row.updated_at;setCloudStatus("已同步云端 · "+(s.by||"")+" · "+fmtTime(CLOUD_REV),"var(--green)");}else{setCloudStatus("云端暂无数据，保存即建立","var(--orange)");}}
+async function ghGet(){const r=await fetch(ghUrl(),{headers:ghHeaders(true),cache:"no-store"});if(r.status===404)return null;if(r.status===403)throw new Error("读取受限(可能触发限流，稍后再试)");if(!r.ok)throw new Error("读取失败("+r.status+")");const j=await r.json();let data;try{data=JSON.parse(b64dec(j.content));}catch(e){throw new Error("云端数据解析失败");}return {data:data,sha:j.sha,updated_at:(j.commit&&j.commit.committer&&j.commit.committer.date)||null};}
+function applyCloud(row){if(row&&row.data&&Object.keys(row.data).length){const s=row.data._sync||{};DATA=mergeWithCloud(row.data);CLOUD_SHA=row.sha;persistLocal();renderAll();CLOUD_REV=s.at||row.updated_at;setCloudStatus("已同步云端 · "+(s.by||"")+" · "+fmtTime(CLOUD_REV),"var(--green)");}else{setCloudStatus("云端暂无数据，保存即建立","var(--orange)");}}
 async function boot(){
   load();
   const wi=document.getElementById("whoAmI");if(wi)wi.value=localStorage.getItem(PREFIX+"who")||"";
@@ -993,7 +993,7 @@ async function boot(){
   if(!syncOn()){setCloudStatus("本地模式（填 Token 可多人共享）","var(--gray)");}
   trySilentPull();
 }
-function trySilentPull(){if(!syncOn())return;ghGet().then(row=>{if(row&&row.data&&Object.keys(row.data).length){const s=row.data._sync||{};const merged=mergeWithCloud(row.data);if(JSON.stringify(merged)!==JSON.stringify(DATA)){CLOUD_SHA=row.sha;persistLocal();renderAll();}CLOUD_SHA=row.sha;CLOUD_REV=s.at||row.updated_at;setCloudStatus("已同步云端 · "+(s.by||"")+" · "+fmtTime(CLOUD_REV),"var(--green)");}else{setCloudStatus("云端暂无数据，保存即建立","var(--orange)");}}).catch(()=>{setCloudStatus("云拉取失败，当前为本地","var(--red)");});}
+function trySilentPull(){if(!syncOn())return;ghGet().then(row=>{if(row&&row.data&&Object.keys(row.data).length){const s=row.data._sync||{};DATA=mergeWithCloud(row.data);CLOUD_SHA=row.sha;persistLocal();renderAll();CLOUD_REV=s.at||row.updated_at;setCloudStatus("已同步云端 · "+(s.by||"")+" · "+fmtTime(CLOUD_REV),"var(--green)");}else{setCloudStatus("云端暂无数据，保存即建立","var(--orange)");}}).catch(()=>{setCloudStatus("云拉取失败，当前为本地","var(--red)");});}
 async function saveCloud(){
   const who=(document.getElementById("whoAmI").value||"").trim();localStorage.setItem(PREFIX+"who",who);
   if(!syncOn()){openSyncSetup();return;}
