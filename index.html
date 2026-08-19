@@ -44,6 +44,17 @@
   .toolbtn svg{width:15px;height:15px}
   .sync{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--sub);padding:6px 10px;border-radius:20px;background:#fff;border:1px solid var(--line)}
   .dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+  .who{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--sub);background:#fff;border:1px solid var(--line);padding:7px 11px;border-radius:10px}
+  .who input{width:92px;padding:5px 8px;border-radius:8px}
+  #btnSaveCloud{flex:0 0 auto;box-shadow:var(--shadow);background:linear-gradient(90deg,var(--primary),var(--primary-2))}
+  #btnSaveCloud:disabled{opacity:.65;cursor:default}
+  .dlg{position:fixed;inset:0;background:rgba(20,30,60,.45);display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+  .dlg.show{display:flex}
+  .dlg-box{background:#fff;border-radius:16px;padding:22px;max-width:430px;width:100%;box-shadow:0 20px 60px rgba(20,30,60,.3)}
+  .dlg-box h3{font-size:17px;font-weight:800;margin-bottom:8px}
+  .dlg-box .desc{font-size:12.5px;color:var(--sub);margin-bottom:6px;line-height:1.6}
+  .dlg-box label{display:block;font-size:12px;font-weight:700;color:var(--sub);margin:12px 0 5px}
+  .dlg-box .modal-actions{display:flex;gap:10px;margin-top:18px}
 
   .section{display:none;animation:fade .25s ease}
   .section.active{display:block}
@@ -264,7 +275,7 @@
     <button class="nav-btn" data-sec="feedback" onclick="go('feedback')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>跟进日志
     </button>
-    <div class="side-foot">数据本地存储 · 支持导出备份<br>项目：<b>广财财税 AI 营销</b><br>周期：90 天 · 5 人专项组</div>
+    <div class="side-foot">支持云端多人同步 · 本地备份<br>项目：<b>广财财税 AI 营销</b><br>周期：90 天 · 5 人专项组</div>
   </aside>
 
   <main class="main">
@@ -274,7 +285,10 @@
         <div class="sub">人员分工明确 · 进度一目了然 · 五大模块交付测算清晰</div>
       </div>
       <div class="spacer"></div>
-      <div class="sync" id="syncBadge"><span class="dot"></span><span id="syncText">已同步（本地）</span></div>
+      <div class="who">填写人 <input id="whoAmI" placeholder="你的名字" maxlength="12"></div>
+      <div class="sync" id="syncBadge"><span class="dot"></span><span id="syncText">本地模式</span></div>
+      <button class="btn-primary" id="btnSaveCloud" onclick="saveCloud()">保存到云端</button>
+      <button class="toolbtn" id="btnRefresh" onclick="pullCloud()">刷新</button>
       <button class="toolbtn" onclick="openDrawer()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.3 1a7 7 0 0 0-1.7-1L14.5 3h-5l-.4 2.5a7 7 0 0 0-1.7 1l-2.3-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.3-1a7 7 0 0 0 1.7 1l.4 2.5h5l.4-2.5a7 7 0 0 0 1.7-1l2.3 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg><span>设置</span>
       </button>
@@ -479,6 +493,28 @@
 <input type="file" id="fileInput" accept=".json" style="display:none" onchange="handleImport(event)">
 <div class="toast" id="toast"></div>
 
+<div class="dlg" id="conflictModal">
+  <div class="dlg-box">
+    <h3>检测到云端有更新</h3>
+    <p class="desc" id="conflictText"></p>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="conflictPull">放弃我的修改，拉取最新</button>
+      <button class="btn-primary" id="conflictOver">仍要覆盖保存</button>
+    </div>
+  </div>
+</div>
+<div class="dlg" id="syncModal">
+  <div class="dlg-box">
+    <h3>配置云端同步（GitHub 仓库）</h3>
+    <p class="desc">填入一个仅限本仓库、具有 Contents 读写权限的 GitHub Token（PAT）。全员用同一个 Token 即可多人同步。Token 仅存你本机浏览器，不会上传。</p>
+    <label>GitHub Token（PAT）</label><input id="ghToken" type="password" placeholder="ghp_... 或 github_pat_...">
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('syncModal')">取消</button>
+      <button class="btn-primary" onclick="saveSyncSetup()">保存并连接</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const PREFIX="wb_wegrow_gc_";
 const STAGE_KEY=PREFIX+"stages", MOD_KEY=PREFIX+"modules", PEOPLE_KEY=PREFIX+"people", FB_KEY=PREFIX+"feedback", SET_KEY=PREFIX+"settings";
@@ -583,16 +619,17 @@ function load(){
   if(!DATA.feedback)DATA.feedback=d.feedback;
   if(!DATA.settings)DATA.settings=d.settings;
 }
-function save(){
+function persistLocal(){
   localStorage.setItem(STAGE_KEY,JSON.stringify(DATA.stages));
   localStorage.setItem(MOD_KEY,JSON.stringify(DATA.modules));
   localStorage.setItem(PEOPLE_KEY,JSON.stringify(DATA.people));
   localStorage.setItem(FB_KEY,JSON.stringify(DATA.feedback));
   localStorage.setItem(SET_KEY,JSON.stringify(DATA.settings));
   localStorage.setItem(SET_KEY+"_meta",JSON.stringify(DATA.meta));
-  flashSync();
 }
-function flashSync(){const t=document.getElementById("syncText");t.textContent="已同步（本地）";document.querySelector("#syncBadge .dot").style.background="var(--green)";}
+function flashSync(){const t=document.getElementById("syncText");if(t)t.textContent="已同步（本地）";const d=document.querySelector("#syncBadge .dot");if(d)d.style.background="var(--green)";}
+function setCloudStatus(text,color){const t=document.getElementById("syncText");if(t)t.textContent=text;const d=document.querySelector("#syncBadge .dot");if(d)d.style.background=color;}
+function save(){persistLocal();if(syncOn()){setCloudStatus("本地已修改 · 点“保存到云端”同步","var(--orange)");}else{setCloudStatus("已保存到本地","var(--green)");}}
 function toast(msg){const el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("show"),2000);}
 
 // ---- date helpers ----
@@ -931,12 +968,65 @@ function handleImport(e){
     save();renderAll();toast("导入成功，数据已恢复");}catch(err){toast("导入失败：文件格式不正确");}};
   r.readAsText(file);e.target.value="";}
 
+// ---- cloud sync (GitHub repo as shared DB) ----
+const GH_OWNER="abdullahlily641-jpg";
+const GH_REPO="-guangcai-workbench";
+const GH_PATH="data.json";
+const GH_BRANCH="main";
+function getGhToken(){return localStorage.getItem(PREFIX+"gh_token")||"";}
+function syncOn(){return getGhToken().length>20;}
+let CLOUD_SHA=null;   // remote blob sha（乐观锁）
+let CLOUD_REV=null;   // 最近一次写入时间（来自 data._sync.at）
+function fmtTime(iso){if(!iso)return"";const d=new Date(iso);const p=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes());}
+function mergeWithCloud(d){const def=defaultData();const src=d&&d.data?d.data:d;delete src._sync;return {meta:src.meta||def.meta,stages:src.stages||def.stages,modules:src.modules||def.modules,people:src.people||def.people,feedback:Array.isArray(src.feedback)?src.feedback:def.feedback,settings:src.settings||def.settings};}
+function ghHeaders(auth){const h={Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"};const t=getGhToken();if(auth&&t)h.Authorization="Bearer "+t;return h;}
+function ghUrl(){return "https://api.github.com/repos/"+GH_OWNER+"/"+GH_REPO+"/contents/"+GH_PATH+"?ref="+GH_BRANCH;}
+function b64enc(s){return btoa(unescape(encodeURIComponent(s)));}
+function b64dec(s){return decodeURIComponent(escape(atob(s.replace(/\s/g,""))));}
+async function ghGet(){const r=await fetch(ghUrl(),{headers:ghHeaders(true)});if(r.status===404)return null;if(r.status===403)throw new Error("读取受限(可能触发限流，稍后再试)");if(!r.ok)throw new Error("读取失败("+r.status+")");const j=await r.json();let data;try{data=JSON.parse(b64dec(j.content));}catch(e){throw new Error("云端数据解析失败");}return {data:data,sha:j.sha,updated_at:(j.commit&&j.commit.committer&&j.commit.committer.date)||null};}
+function applyCloud(row){if(row&&row.data&&Object.keys(row.data).length){const s=row.data._sync||{};const merged=mergeWithCloud(row.data);CLOUD_SHA=row.sha;persistLocal();renderAll();CLOUD_REV=s.at||row.updated_at;setCloudStatus("已同步云端 · "+(s.by||"")+" · "+fmtTime(CLOUD_REV),"var(--green)");}else{setCloudStatus("云端暂无数据，保存即建立","var(--orange)");}}
+async function boot(){
+  load();
+  const wi=document.getElementById("whoAmI");if(wi)wi.value=localStorage.getItem(PREFIX+"who")||"";
+  document.getElementById("fbDate").value=todayStr();
+  renderAll();
+  if(!syncOn()){setCloudStatus("本地模式（填 Token 可多人共享）","var(--gray)");}
+  trySilentPull();
+}
+function trySilentPull(){if(!syncOn())return;ghGet().then(row=>{if(row&&row.data&&Object.keys(row.data).length){const s=row.data._sync||{};const merged=mergeWithCloud(row.data);if(JSON.stringify(merged)!==JSON.stringify(DATA)){CLOUD_SHA=row.sha;persistLocal();renderAll();}CLOUD_SHA=row.sha;CLOUD_REV=s.at||row.updated_at;setCloudStatus("已同步云端 · "+(s.by||"")+" · "+fmtTime(CLOUD_REV),"var(--green)");}else{setCloudStatus("云端暂无数据，保存即建立","var(--orange)");}}).catch(()=>{setCloudStatus("云拉取失败，当前为本地","var(--red)");});}
+async function saveCloud(){
+  const who=(document.getElementById("whoAmI").value||"").trim();localStorage.setItem(PREFIX+"who",who);
+  if(!syncOn()){openSyncSetup();return;}
+  const btn=document.getElementById("btnSaveCloud");btn.disabled=true;btn.textContent="保存中…";setCloudStatus("正在保存到云端…","var(--gray)");
+  try{
+    const cur=await ghGet();
+    if(cur&&cur.sha&&CLOUD_SHA&&cur.sha!==CLOUD_SHA){const ok=await confirmConflict(cur);if(!ok){applyCloud(cur);toast("已拉取他人最新修改");return;}}
+    if(cur&&cur.sha)CLOUD_SHA=cur.sha;
+    const payload=JSON.parse(JSON.stringify(DATA));payload._sync={by:who||"匿名",at:new Date().toISOString()};
+    const body={message:"workbench sync by "+(who||"anon"),content:b64enc(JSON.stringify(payload)),branch:GH_BRANCH};
+    if(CLOUD_SHA)body.sha=CLOUD_SHA;
+    let r=await fetch(ghUrl(),{method:"PUT",headers:Object.assign(ghHeaders(true),{"Content-Type":"application/json"}),body:JSON.stringify(body)});
+    if(r.status===409){const cur2=await ghGet();const ok=await confirmConflict(cur2);if(!ok){applyCloud(cur2);toast("已拉取他人最新修改");return;}CLOUD_SHA=cur2.sha;body.sha=CLOUD_SHA;r=await fetch(ghUrl(),{method:"PUT",headers:Object.assign(ghHeaders(true),{"Content-Type":"application/json"}),body:JSON.stringify(body)});}
+    if(!r.ok)throw new Error("保存失败("+r.status+")");
+    const j=await r.json();CLOUD_SHA=j.content.sha;CLOUD_REV=payload._sync.at;persistLocal();renderAll();
+    setCloudStatus("已同步云端 · "+(who||"匿名")+" · "+fmtTime(CLOUD_REV),"var(--green)");toast("已保存到云端，团队可见");
+  }catch(e){setCloudStatus("保存失败："+e.message,"var(--red)");toast("保存失败，请检查网络/Token");}
+  finally{btn.disabled=false;btn.textContent="保存到云端";}
+}
+async function pullCloud(){
+  setCloudStatus("正在拉取最新…","var(--gray)");
+  try{const row=await ghGet();applyCloud(row);toast("已拉取最新数据");}catch(e){setCloudStatus("拉取失败："+e.message,"var(--red)");toast("拉取失败");}
+}
+function confirmConflict(cur){return new Promise(res=>{const s=(cur.data&&cur.data._sync)||{};document.getElementById("conflictText").textContent="数据已被 "+(s.by||"他人")+" 于 "+fmtTime(s.at||cur.updated_at)+" 修改。是否仍用你当前内容覆盖？";const m=document.getElementById("conflictModal");m.classList.add("show");const pull=document.getElementById("conflictPull"),over=document.getElementById("conflictOver");function clean(v){m.classList.remove("show");pull.onclick=null;over.onclick=null;res(v);}pull.onclick=()=>clean(false);over.onclick=()=>clean(true);});}
+function openSyncSetup(){document.getElementById("ghToken").value=getGhToken();document.getElementById("syncModal").classList.add("show");}
+async function saveSyncSetup(){const t=document.getElementById("ghToken").value.trim();if(t.length<20){toast("请填写有效的 Token");return;}localStorage.setItem(PREFIX+"gh_token",t);document.getElementById("syncModal").classList.remove("show");setCloudStatus("已配置，正在连接…","var(--gray)");try{const row=await ghGet();applyCloud(row);toast("连接成功"+(row?"，已读取云端":"，云端为空，保存即建立"));}catch(e){setCloudStatus("连接失败："+e.message,"var(--red)");toast("连接失败，请检查 Token 权限");}}
+
 // ---- live query bindings ----
 ["qPerson","qModule","qStatus","qSearch"].forEach(id=>{document.getElementById(id).addEventListener("change",runQuery);document.getElementById(id).addEventListener("input",runQuery);});
 
 // ---- init ----
 function renderAll(){renderOverview();renderPeople();renderModules();renderBoard();renderQuery();renderFeedback();}
-load();
+boot();
 document.getElementById("fbDate").value=todayStr();
 renderAll();
 </script>
