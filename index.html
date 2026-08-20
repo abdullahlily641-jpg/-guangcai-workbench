@@ -290,7 +290,7 @@
       </div>
       <div class="spacer"></div>
       <div class="who">填写人 <input id="whoAmI" placeholder="你的名字" maxlength="12"></div>
-      <div class="sync" id="syncBadge"><span class="dot"></span><span id="syncText">本地模式</span></div>
+      <div class="sync" id="syncBadge"><span class="dot"></span><span id="syncText">连接中…</span></div>
       <button class="btn-primary" id="btnSaveCloud" onclick="saveCloud()">保存到云端</button>
       <button class="toolbtn" id="btnRefresh" onclick="pullCloud()">刷新</button>
       <button class="toolbtn" onclick="openDrawer()">
@@ -510,8 +510,9 @@
 <div class="dlg" id="syncModal">
   <div class="dlg-box">
     <h3>配置云端同步（GitHub 仓库）</h3>
-    <p class="desc">填入一个仅限本仓库、具有 Contents 读写权限的 GitHub Token（PAT）。全员用同一个 Token 即可多人同步。Token 仅存你本机浏览器，不会上传。</p>
-    <label>GitHub Token（PAT）</label><input id="ghToken" type="password" placeholder="ghp_... 或 github_pat_...">
+    <p class="desc">工作台多人共享一个云端数据库（仓库 <b>-guangcai-workbench</b>）。<b>不填 Token 也能自动看到大家的进度</b>；填了 Token 才能把你的修改保存到云端。</p>
+    <label>项目共享 Token（向管理员索取 · 一个 Token 全员通用）</label><input id="ghToken" type="password" placeholder="ghp_... 或 github_pat_...">
+    <p class="desc" style="margin-top:10px">Token 仅保存在你自己的浏览器里，不会上传。管理员在 GitHub「Settings → Developer settings → Personal access tokens」创建仅限本仓库的 Token 后发到工作群，成员粘贴到这里点「保存并连接」即可。</p>
     <div class="modal-actions">
       <button class="btn-ghost" onclick="closeModal('syncModal')">取消</button>
       <button class="btn-primary" onclick="saveSyncSetup()">保存并连接</button>
@@ -529,6 +530,7 @@ const STATUS_COLOR={todo:"#9aa4b5",doing:"#2b6cf6",done:"#16a673",delay:"#e5484d
 const FB_LABEL={normal:"正常",risk:"风险",block:"阻塞",done:"已完成"};
 
 let DATA={};
+let DIRTY=false;   // 本地是否有未保存到云端的修改（自动轮询时避免冲掉用户正在编辑的内容）
 let boardFilter="all", modFilter="all", fbFilter="all";
 
 function defaultData(){
@@ -633,7 +635,7 @@ function persistLocal(){
 }
 function flashSync(){const t=document.getElementById("syncText");if(t)t.textContent="已同步（本地）";const d=document.querySelector("#syncBadge .dot");if(d)d.style.background="var(--green)";}
 function setCloudStatus(text,color){const t=document.getElementById("syncText");if(t)t.textContent=text;const d=document.querySelector("#syncBadge .dot");if(d)d.style.background=color;}
-function save(){persistLocal();if(syncOn()){setCloudStatus("本地已修改 · 点“保存到云端”同步","var(--orange)");}else{setCloudStatus("已保存到本地","var(--green)");}}
+function save(){DIRTY=true;persistLocal();if(syncOn()){setCloudStatus("本地已修改 · 点“保存到云端”同步","var(--orange)");}else{setCloudStatus("已保存到本地 · 填 Token 可共享","var(--green)");}}
 function toast(msg){const el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("show"),2000);}
 
 // ---- date helpers ----
@@ -1018,16 +1020,34 @@ function ghUrl(){return "https://api.github.com/repos/"+GH_OWNER+"/"+GH_REPO+"/c
 function b64enc(s){return btoa(unescape(encodeURIComponent(s)));}
 function b64dec(s){return decodeURIComponent(escape(atob(s.replace(/\s/g,""))));}
 async function ghGet(){const r=await fetch(ghUrl(),{headers:ghHeaders(true),cache:"no-store"});if(r.status===404)return null;if(r.status===403)throw new Error("读取受限(可能触发限流，稍后再试)");if(!r.ok)throw new Error("读取失败("+r.status+")");const j=await r.json();let data;try{data=JSON.parse(b64dec(j.content));}catch(e){throw new Error("云端数据解析失败");}return {data:data,sha:j.sha,updated_at:(j.commit&&j.commit.committer&&j.commit.committer.date)||null};}
-function applyCloud(row){if(row&&row.data&&Object.keys(row.data).length){const s=row.data._sync||{};DATA=mergeWithCloud(row.data);BASE_DATA=deepClone(DATA);CLOUD_SHA=row.sha;persistLocal();renderAll();CLOUD_REV=s.at||row.updated_at;setCloudStatus("已同步云端 · "+(s.by||"")+" · "+fmtTime(CLOUD_REV),"var(--green)");}else{setCloudStatus("云端暂无数据，保存即建立","var(--orange)");}}
+function applyCloud(row){if(row&&row.data&&Object.keys(row.data).length){const s=row.data._sync||{};DATA=mergeWithCloud(row.data);BASE_DATA=deepClone(DATA);CLOUD_SHA=row.sha;DIRTY=false;persistLocal();renderAll();CLOUD_REV=s.at||row.updated_at;setCloudStatus((syncOn()?"已同步云端 · ":"已载入云端数据(只读) · ")+(s.by||"")+" · "+fmtTime(CLOUD_REV),(syncOn()?"var(--green)":"var(--primary)"));}else{setCloudStatus(syncOn()?"云端暂无数据，保存即建立":"云端暂无数据 · 填 Token 后可保存","var(--orange)");}}
 async function boot(){
   load();
   const wi=document.getElementById("whoAmI");if(wi)wi.value=localStorage.getItem(PREFIX+"who")||"";
   document.getElementById("fbDate").value=todayStr();
   renderAll();
-  if(!syncOn()){setCloudStatus("本地模式（填 Token 可多人共享）","var(--gray)");}
   trySilentPull();
+  autoPoll();
 }
-function trySilentPull(){if(!syncOn())return;ghGet().then(row=>{if(row&&row.data&&Object.keys(row.data).length){const s=row.data._sync||{};DATA=mergeWithCloud(row.data);BASE_DATA=deepClone(DATA);CLOUD_SHA=row.sha;persistLocal();renderAll();CLOUD_REV=s.at||row.updated_at;setCloudStatus("已同步云端 · "+(s.by||"")+" · "+fmtTime(CLOUD_REV),"var(--green)");}else{setCloudStatus("云端暂无数据，保存即建立","var(--orange)");}}).catch(()=>{setCloudStatus("云拉取失败，当前为本地","var(--red)");});}
+function trySilentPull(){return ghGet().then(row=>{if(row&&row.data&&Object.keys(row.data).length){const s=row.data._sync||{};DATA=mergeWithCloud(row.data);BASE_DATA=deepClone(DATA);CLOUD_SHA=row.sha;DIRTY=false;persistLocal();renderAll();CLOUD_REV=s.at||row.updated_at;setCloudStatus((syncOn()?"已同步云端 · ":"已载入云端数据(只读) · ")+(s.by||"")+" · "+fmtTime(CLOUD_REV),(syncOn()?"var(--green)":"var(--primary)"));}else{setCloudStatus(syncOn()?"云端暂无数据，保存即建立":"云端暂无数据 · 填 Token 后可保存","var(--orange)");}}).catch(()=>{setCloudStatus(syncOn()?"云拉取失败，当前为本地":"本地模式 · 网络异常，仅显示本地数据","var(--red)");});}
+// 自动轮询：他人保存后 45 秒内自动同步到本页；本地有未保存修改时不强冲，提示点「保存到云端」自动合并
+function pollOnce(){
+  if(document.hidden)return Promise.resolve();
+  return ghGet().then(row=>{
+    if(!row||!row.data||!Object.keys(row.data).length)return;
+    const s=row.data._sync||{};
+    const rev=s.at||row.updated_at||"";
+    if(rev&&rev!==CLOUD_REV){
+      if(DIRTY){
+        setCloudStatus("云端有 "+(s.by||"他人")+" 的新修改 · 点「保存到云端」自动合并","var(--orange)");
+      }else{
+        applyCloud(row);
+        toast("已自动同步 "+(s.by||"他人")+" 的最新修改");
+      }
+    }
+  }).catch(()=>{});
+}
+function autoPoll(){setInterval(pollOnce,45000);}
 async function saveCloud(){
   const who=(document.getElementById("whoAmI").value||"").trim();localStorage.setItem(PREFIX+"who",who);
   if(!syncOn()){openSyncSetup();return;}
@@ -1062,7 +1082,7 @@ async function saveCloud(){
       r=await fetch(ghUrl(),{method:"PUT",headers:Object.assign(ghHeaders(true),{"Content-Type":"application/json"}),body:JSON.stringify(body)});
     }
     if(!r.ok)throw new Error("保存失败("+r.status+")");
-    const j=await r.json();CLOUD_SHA=j.content.sha;CLOUD_REV=payload._sync.at;BASE_DATA=deepClone(DATA);persistLocal();renderAll();
+    const j=await r.json();CLOUD_SHA=j.content.sha;CLOUD_REV=payload._sync.at;BASE_DATA=deepClone(DATA);DIRTY=false;persistLocal();renderAll();
     setCloudStatus("已同步云端 · "+(who||"匿名")+" · "+fmtTime(CLOUD_REV),"var(--green)");toast("已保存到云端（自动合并他人改动）");
   }catch(e){setCloudStatus("保存失败："+e.message,"var(--red)");toast("保存失败，请检查网络/Token");}
   finally{btn.disabled=false;btn.textContent="保存到云端";}
